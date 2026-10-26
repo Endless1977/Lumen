@@ -1,0 +1,20 @@
+name: Release check
+
+# When you publish a release (tag like v2026.10.26), check that the tag matches the version in manifest.json.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - run: |
+          v=$(python3 -c "import json;print(json.load(open('custom_components/lumen/manifest.json'))['version'])")
+          t="${GITHUB_REF_NAME#v}"
+          echo "manifest $v, tag $t"
+          test "$v" = "$t"
