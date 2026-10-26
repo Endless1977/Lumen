@@ -1,0 +1,154 @@
+# Lumen — helpers (package)
+#
+# Lumen reads and writes these helpers. Put this file in /config/packages/ and add to
+# configuration.yaml (once):
+#
+#   homeassistant:
+#     packages: !include_dir_named packages
+#
+# then restart Home Assistant. Everything here is optional: Lumen hides a feature when its
+# helper is missing. Delete whatever you don't use. The sensors Lumen can show
+# (sensor.lumen_e_*, sensor.lumen_afval, binary_sensor.lumen_weeralarm, …) depend on your
+# own devices; see docs/entities.md for what each one should contain.
+
+input_select:
+  lumen_modus:
+    name: Lumen modus
+    options: [normaal, bewaking, waarschuwing, alarm, vakantie, nacht, feest, gasten, deurbel]
+    initial: normaal
+    icon: mdi:shield-home
+  huis_modus:
+    name: Seizoen
+    options: [winter, zomer]
+    icon: mdi:sun-snowflake-variant
+  lumen_warmtebuffer_modus:
+    name: Warmtebuffer wanneer
+    options: [overschot, schema, beide]
+  lumen_warmtebuffer_richting:
+    name: Warmtebuffer richting
+    options: [automatisch, verwarmen, koelen]
+
+input_text:
+  # "<time ISO>|<sentence>" — every new value is spoken by Lumen once
+  lumen_melding:
+    name: Lumen melding
+    max: 255
+  # camera shown during a warning, e.g. camera.achtertuin
+  lumen_camera:
+    name: Lumen camera
+    max: 255
+  # "<time ISO>|<camera>|<bel|persoon|pakket|dier>|<text>" — doorbell / animal at the door
+  lumen_deurbel:
+    name: Lumen deurbel
+    max: 255
+  # "<time ISO>|<stream url>" — lets an automation start a radio stream on the Lumen screen
+  lumen_radio:
+    name: Lumen radio
+    max: 255
+  lumen_vorige_modus:
+    name: Lumen vorige modus
+    max: 32
+  lumen_cctv_gemarkeerd_camera:
+    name: Lumen gemarkeerde camera
+    max: 255
+
+input_boolean:
+  lumen_slim_besparen:
+    name: Slim besparen
+    icon: mdi:leaf
+  lumen_warmtebuffer:
+    name: Warmtebuffer
+  lumen_warmtebuffer_prijs:
+    name: Warmtebuffer ook op stroomprijs
+  lumen_niet_thuis:
+    name: Niet thuis
+    icon: mdi:home-export-outline
+  lumen_nacht_actief:
+    name: Nachtmodus
+  lumen_nacht_lampen:
+    name: Nacht lampen uit
+  lumen_nacht_airco:
+    name: Nacht airco's uit
+  lumen_nacht_verwarming:
+    name: Nacht verwarming uit (zomer)
+  lumen_vakantie:
+    name: Vakantie
+  lumen_vakantie_aanwezigheid:
+    name: Vakantie lampen alsof er iemand is
+  lumen_tuin_voor:
+    name: Wij zijn in de voortuin
+  lumen_tuin_achter:
+    name: Wij zijn in de achtertuin
+  lumen_scherp_achter:
+    name: Achtertuin op scherp
+    icon: mdi:shield-alert
+  lumen_deurbel_tts_verzonden:
+    name: Deurbel bericht verzonden
+
+input_number:
+  lumen_tuin_uren:
+    name: Tuinmodus uren
+    min: 1
+    max: 12
+    step: 1
+    initial: 4
+    unit_of_measurement: u
+  lumen_warmtebuffer_drempel:
+    name: Warmtebuffer vanaf overschot
+    min: 500
+    max: 6000
+    step: 100
+    unit_of_measurement: W
+  lumen_comfort_winter_min: {name: Comfort winter minimaal, min: 15, max: 25, step: 0.5, unit_of_measurement: "°C"}
+  lumen_comfort_winter_max: {name: Comfort winter maximaal, min: 18, max: 26, step: 0.5, unit_of_measurement: "°C"}
+  lumen_comfort_zomer_min: {name: Comfort zomer minimaal, min: 16, max: 26, step: 0.5, unit_of_measurement: "°C"}
+  lumen_comfort_zomer_max: {name: Comfort zomer maximaal, min: 18, max: 28, step: 0.5, unit_of_measurement: "°C"}
+  lumen_extreem_koud_winter: {name: Extreem koud vanaf, min: -20, max: 5, step: 1, unit_of_measurement: "°C"}
+  lumen_extreem_warm_zomer: {name: Extreem warm vanaf, min: 20, max: 40, step: 1, unit_of_measurement: "°C"}
+  lumen_nacht_vloer: {name: Nacht nooit kouder dan, min: 12, max: 22, step: 0.5, unit_of_measurement: "°C"}
+  lumen_nacht_plafond: {name: Nacht nooit warmer dan, min: 18, max: 28, step: 0.5, unit_of_measurement: "°C"}
+  lumen_accu_nacht_marge: {name: Nacht-uitzondering accu minstens, min: 0, max: 100, step: 5, unit_of_measurement: "%"}
+  lumen_nacht_wachttijd: {name: Nacht wachttijd op antwoord, min: 1, max: 30, step: 1, unit_of_measurement: min}
+  lumen_nacht_wintertemp: {name: Nacht wintertemperatuur, min: 14, max: 21, step: 0.5, unit_of_measurement: "°C"}
+  lumen_vakantie_temp: {name: Vakantie temperatuur, min: 10, max: 20, step: 0.5, unit_of_measurement: "°C"}
+  lumen_zon_investering: {name: Investering zonnepanelen, min: 0, max: 30000, step: 50, unit_of_measurement: "€", mode: box}
+  lumen_accu_investering: {name: Investering thuisaccu, min: 0, max: 30000, step: 50, unit_of_measurement: "€", mode: box}
+  lumen_water_meterstand: {name: Watermeterstand, min: 0, max: 99999, step: 0.001, unit_of_measurement: "m³", mode: box}
+  lumen_deurbel_geen_antwoord_minuten: {name: Deurbel geen antwoord na, min: 1, max: 15, step: 1, unit_of_measurement: min}
+
+input_datetime:
+  lumen_nacht_start: {name: Nachtmodus begint om, has_date: false, has_time: true}
+  lumen_vakantie_van: {name: Vakantie van, has_date: true, has_time: false}
+  lumen_vakantie_tot: {name: Vakantie tot en met, has_date: true, has_time: false}
+  lumen_water_datum: {name: Watermeter opgenomen op, has_date: true, has_time: false}
+  lumen_cctv_gemarkeerd_tijdstip: {name: Lumen gemarkeerd tijdstip, has_date: true, has_time: true}
+
+timer:
+  lumen_deurbel_geen_antwoord:
+    name: Deurbel geen antwoord
+
+script:
+  # "Bekend, negeren" in Lumen's guard bar
+  lumen_override:
+    alias: Lumen override
+    sequence:
+      - action: input_select.select_option
+        target: {entity_id: input_select.lumen_modus}
+        data: {option: normaal}
+  # "Alarm laten afgaan" — add your own siren / notification here
+  lumen_alarm:
+    alias: Lumen alarm
+    sequence:
+      - action: input_select.select_option
+        target: {entity_id: input_select.lumen_modus}
+        data: {option: alarm}
+      # - action: siren.turn_on
+      #   target: {entity_id: siren.your_siren}
+  # "Ik blijf wakker" in the night question
+  lumen_blijf_wakker:
+    alias: Lumen blijf wakker
+    sequence:
+      - action: input_text.set_value
+        target: {entity_id: input_text.lumen_melding}
+        data:
+          value: "{{ now().isoformat() }}|Oké, ik laat alles nog even aan staan."

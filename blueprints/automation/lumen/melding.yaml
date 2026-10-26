@@ -1,0 +1,43 @@
+blueprint:
+  name: Lumen – iets laten zeggen
+  description: >
+    Lumen speaks a sentence when an entity changes, for example "The washing machine is done"
+    or "The back door is still open". Uses input_text.lumen_melding.
+  domain: automation
+  source_url: https://github.com/Endless1977/lumen/blob/main/blueprints/automation/lumen/melding.yaml
+  input:
+    entiteit:
+      name: Entity
+      selector:
+        entity: {}
+    naar:
+      name: To state (optional, empty = every change)
+      default: ""
+      selector:
+        text: {}
+    duur:
+      name: For at least
+      default: {hours: 0, minutes: 0, seconds: 0}
+      selector:
+        duration: {}
+    tekst:
+      name: Sentence for Lumen
+      description: Templates are allowed, e.g. "{{ state_attr('sensor.x', 'y') }}"
+      selector:
+        text: {multiline: true}
+mode: queued
+triggers:
+  - trigger: state
+    entity_id: !input entiteit
+    for: !input duur
+variables:
+  naar: !input naar
+  tekst: !input tekst
+conditions:
+  - condition: template
+    value_template: "{{ naar == '' or trigger.to_state.state == naar }}"
+actions:
+  - action: input_text.set_value
+    target: {entity_id: input_text.lumen_melding}
+    data:
+      value: "{{ (now().isoformat() ~ '|' ~ tekst)[:255] }}"

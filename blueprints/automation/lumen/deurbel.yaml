@@ -1,0 +1,46 @@
+blueprint:
+  name: Lumen – deurbel
+  description: >
+    When the doorbell is pressed, Lumen turns green, jumps to the CCTV page and shows the
+    camera large, with the quick replies. Works with a doorbell button as binary sensor
+    or as event entity.
+  domain: automation
+  source_url: https://github.com/Endless1977/lumen/blob/main/blueprints/automation/lumen/deurbel.yaml
+  input:
+    bel:
+      name: Doorbell button
+      description: binary_sensor (turns on when pressed) or event entity of the doorbell
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
+            - domain: event
+    camera:
+      name: Doorbell camera
+      selector:
+        entity:
+          filter:
+            - domain: camera
+    tekst:
+      name: Text (optional)
+      default: ""
+      selector:
+        text: {}
+mode: single
+max_exceeded: silent
+triggers:
+  - trigger: state
+    entity_id: !input bel
+conditions:
+  - condition: template
+    value_template: >
+      {{ trigger.to_state is not none and trigger.to_state.state not in ['unknown', 'unavailable', 'off']
+         and (trigger.entity_id.startswith('event.') or trigger.to_state.state == 'on') }}
+actions:
+  - variables:
+      cam: !input camera
+      txt: !input tekst
+  - action: input_text.set_value
+    target: {entity_id: input_text.lumen_deurbel}
+    data:
+      value: "{{ (now().isoformat() ~ '|' ~ cam ~ '|bel|' ~ txt)[:255] }}"

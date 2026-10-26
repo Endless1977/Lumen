@@ -1,0 +1,23 @@
+blueprint:
+  name: Lumen – waarschuwing vanzelf terug naar normaal
+  description: >
+    A warning (input_select.lumen_modus = waarschuwing) goes back to "normaal" after a while
+    without a reaction. An alarm never goes back by itself.
+  domain: automation
+  source_url: https://github.com/Endless1977/lumen/blob/main/blueprints/automation/lumen/waarschuwing_terug.yaml
+  input:
+    minuten:
+      name: After … minutes
+      default: 10
+      selector:
+        number: {min: 1, max: 120, unit_of_measurement: min}
+mode: restart
+triggers:
+  - trigger: state
+    entity_id: input_select.lumen_modus
+    to: waarschuwing
+    for: {minutes: !input minuten}
+actions:
+  - action: input_select.select_option
+    target: {entity_id: input_select.lumen_modus}
+    data: {option: normaal}

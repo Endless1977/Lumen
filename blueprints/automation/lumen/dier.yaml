@@ -1,0 +1,52 @@
+blueprint:
+  name: Lumen – dier bij de deur
+  description: >
+    When a camera sees a cat or another animal at the door, Lumen turns amber and shows that
+    camera, so the cat doesn't have to wait long. Never raises a warning or alarm.
+  domain: automation
+  source_url: https://github.com/Endless1977/lumen/blob/main/blueprints/automation/lumen/dier.yaml
+  input:
+    dier:
+      name: Animal detection
+      description: binary_sensor that turns on when the camera sees an animal (Reolink, Frigate, …)
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
+    camera:
+      name: Camera
+      selector:
+        entity:
+          filter:
+            - domain: camera
+    tekst:
+      name: Text shown in Lumen
+      default: De kat staat bij de deur
+      selector:
+        text: {}
+    rust:
+      name: At most once every … minutes
+      default: 3
+      selector:
+        number: {min: 1, max: 30, unit_of_measurement: min}
+mode: single
+max_exceeded: silent
+variables:
+  cam: !input camera
+  txt: !input tekst
+  rust: !input rust
+triggers:
+  - trigger: state
+    entity_id: !input dier
+    to: "on"
+conditions:
+  # at most once every `rust` minutes
+  - condition: template
+    value_template: >
+      {{ this.attributes.last_triggered is none
+         or (now() - this.attributes.last_triggered).total_seconds() > rust * 60 }}
+actions:
+  - action: input_text.set_value
+    target: {entity_id: input_text.lumen_deurbel}
+    data:
+      value: "{{ (now().isoformat() ~ '|' ~ cam ~ '|dier|' ~ txt)[:255] }}"

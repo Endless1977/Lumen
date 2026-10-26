@@ -1,0 +1,14 @@
+{
+  "domain": "lumen",
+  "name": "Lumen",
+  "codeowners": ["@Endless1977"],
+  "config_flow": true,
+  "dependencies": ["frontend", "http"],
+  "documentation": "https://github.com/Endless1977/lumen",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/Endless1977/lumen/issues",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "2026.10.26"
+}

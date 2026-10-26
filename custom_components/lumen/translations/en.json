@@ -1,0 +1,50 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Lumen",
+        "description": "Lumen appears in the sidebar. Screens can still change these settings for themselves in Lumen › Instellingen.",
+        "data": {
+          "title": "Name in the sidebar",
+          "icon": "Icon",
+          "admin_only": "Only for administrators",
+          "agent": "Conversation agent (empty = default)",
+          "tts": "Voice (text-to-speech, empty = the browser's own voice)",
+          "voice": "Voice variant (optional, e.g. nl_NL-ronnie-medium)",
+          "stt": "Speech recognition (empty = the browser's own)",
+          "lang": "Language (nl, nl-BE, en …)",
+          "place": "Home town (for local news, optional)"
+        },
+        "data_description": {
+          "agent": "Used by every screen that has no conversation agent of its own set in Lumen's settings. The same goes for voice, speech recognition and language."
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Lumen is already set up.",
+      "single_instance_allowed": "Lumen is already set up."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Lumen options",
+        "description": "Lumen appears in the sidebar. Screens can still change these settings for themselves in Lumen › Instellingen.",
+        "data": {
+          "title": "Name in the sidebar",
+          "icon": "Icon",
+          "admin_only": "Only for administrators",
+          "agent": "Conversation agent (empty = default)",
+          "tts": "Voice (text-to-speech, empty = the browser's own voice)",
+          "voice": "Voice variant (optional, e.g. nl_NL-ronnie-medium)",
+          "stt": "Speech recognition (empty = the browser's own)",
+          "lang": "Language (nl, nl-BE, en …)",
+          "place": "Home town (for local news, optional)"
+        },
+        "data_description": {
+          "agent": "Used by every screen that has no conversation agent of its own set in Lumen's settings. The same goes for voice, speech recognition and language."
+        }
+      }
+    }
+  }
+}

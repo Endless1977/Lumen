@@ -1,0 +1,50 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Lumen instellen",
+        "description": "Lumen verschijnt in de zijbalk. Elk scherm kan deze instellingen in Lumen › Instellingen nog voor zichzelf aanpassen.",
+        "data": {
+          "title": "Naam in de zijbalk",
+          "icon": "Pictogram",
+          "admin_only": "Alleen voor beheerders",
+          "agent": "Gespreksagent (leeg = standaard)",
+          "tts": "Stem (tekst-naar-spraak, leeg = de stem van de browser)",
+          "voice": "Stemvariant (optioneel, bijv. nl_NL-ronnie-medium)",
+          "stt": "Spraakherkenning (leeg = die van de browser)",
+          "lang": "Taal (nl, nl-BE, en …)",
+          "place": "Woonplaats (voor lokaal nieuws, optioneel)"
+        },
+        "data_description": {
+          "agent": "Geldt voor elk scherm dat in Lumen zelf geen eigen gespreksagent heeft ingesteld. Hetzelfde voor stem, spraakherkenning en taal."
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Lumen is al ingesteld.",
+      "single_instance_allowed": "Lumen is al ingesteld."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Lumen-opties",
+        "description": "Lumen verschijnt in de zijbalk. Elk scherm kan deze instellingen in Lumen › Instellingen nog voor zichzelf aanpassen.",
+        "data": {
+          "title": "Naam in de zijbalk",
+          "icon": "Pictogram",
+          "admin_only": "Alleen voor beheerders",
+          "agent": "Gespreksagent (leeg = standaard)",
+          "tts": "Stem (tekst-naar-spraak, leeg = de stem van de browser)",
+          "voice": "Stemvariant (optioneel, bijv. nl_NL-ronnie-medium)",
+          "stt": "Spraakherkenning (leeg = die van de browser)",
+          "lang": "Taal (nl, nl-BE, en …)",
+          "place": "Woonplaats (voor lokaal nieuws, optioneel)"
+        },
+        "data_description": {
+          "agent": "Geldt voor elk scherm dat in Lumen zelf geen eigen gespreksagent heeft ingesteld. Hetzelfde voor stem, spraakherkenning en taal."
+        }
+      }
+    }
+  }
+}
