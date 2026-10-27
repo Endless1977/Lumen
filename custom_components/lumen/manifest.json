@@ -1,6 +1,7 @@
 {
   "domain": "lumen",
   "name": "Lumen",
+  "categories": ["ai_voice.voice_assistants", "energy.meters_monitoring", "security_safety.cameras"],
   "codeowners": ["@Endless1977"],
   "config_flow": true,
   "dependencies": ["frontend", "http"],
