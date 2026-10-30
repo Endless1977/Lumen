@@ -1,7 +1,7 @@
 """Constants for the Lumen integration."""
 
 DOMAIN = "lumen"
-VERSION = "2026.10.27"
+VERSION = "2026.10.30"
 
 # Where the page and the bundled model are served from (same origin as Home Assistant,
 # so Lumen can use the existing Home Assistant login and needs no access token).

@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lumen Gezichtseditor</title>
+<style>
+:root{--bg:#06090b;--panel:#0b1215;--line:#1d3138;--ink:#d9f6ff;--mute:#7c9aa3;--accent:#4df3ff;--lip:#ff5c8a;--seam:#ffd84a;--eye:#7dffb0;--warn:#ffb15c}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.app{display:grid;grid-template-columns:1fr 380px;height:100vh}
+#view{position:relative;min-width:0}
+canvas{display:block;width:100%;height:100%}
+.hint{position:absolute;left:12px;top:12px;right:12px;padding:8px 12px;background:rgba(6,9,11,.8);border:1px solid var(--line);border-radius:6px;font-size:13px;pointer-events:none}
+.side{border-left:1px solid var(--line);background:var(--panel);overflow-y:auto;padding:14px}
+h1{font-size:16px;margin:0 0 4px;letter-spacing:.06em}
+.sub{color:var(--mute);font-size:12px;margin:0 0 12px}
+section{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:10px}
+section h2{font-size:13px;margin:0 0 8px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent)}
+label{display:block;font-size:12px;color:var(--mute);margin:6px 0 2px}
+input[type=file]{width:100%;font-size:12px;color:var(--mute)}
+input[type=range]{width:100%}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+button{font:inherit;font-size:12px;padding:6px 10px;border-radius:5px;border:1px solid var(--line);background:#0f1a1e;color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.on{background:var(--accent);color:#03181c;border-color:var(--accent)}
+button.primary{background:var(--accent);color:#03181c;border-color:var(--accent);font-weight:600}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.parts label{display:flex;gap:6px;align-items:center;color:var(--ink);margin:4px 0}
+.parts select{flex:1;font-size:12px;background:#0f1a1e;color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:3px}
+.keys{display:grid;grid-template-columns:110px 1fr;gap:2px 8px;align-items:center;font-size:12px}
+.small{font-size:12px;color:var(--mute)}
+.warn{color:var(--warn)}
+.ok{color:var(--eye)}
+@media (max-width:900px){.app{grid-template-columns:1fr;grid-template-rows:55vh 1fr}.side{border-left:0;border-top:1px solid var(--line)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="view"><canvas id="c"></canvas><div class="hint" id="hint">Laad eerst een model (rechts).</div></div>
+  <div class="side">
+    <h1>LUMEN · GEZICHTSEDITOR</h1>
+    <p class="sub">Geef lippen, lipnaad en ogen aan. De editor maakt er vormen (shape keys) van voor praten, knipperen en uitdrukkingen.</p>
+
+    <section>
+      <h2>1 · Modellen</h2>
+      <label>Hoofd (GLB)</label><input type="file" id="fBase" accept=".glb,.gltf">
+      <label>Onderdelen: ogen en binnenkant mond (GLB, optioneel)</label><input type="file" id="fDonor" accept=".glb,.gltf">
+      <div class="parts" id="parts"></div>
+      <div class="row" style="margin-top:8px">
+        <button id="bFront">Vooraanzicht</button><button id="bSetFront">Dit is het vooraanzicht</button><button id="bHide">Punten verbergen</button>
+      </div>
+      <p class="small">Draai het hoofd met de muis (rechts slepen = verschuiven, scrollen = zoomen). Kijkt het gezicht recht naar je, klik dan "Dit is het vooraanzicht".</p>
+    </section>
+
+    <section>
+      <h2>2 · Lippen</h2>
+      <div class="row">
+        <button data-mode="lip"><span class="dot" style="background:var(--lip)"></span>Buitenrand lippen</button>
+        <button data-mode="seam"><span class="dot" style="background:var(--seam)"></span>Lipnaad</button>
+      </div>
+      <p class="small"><b>Buitenrand:</b> klik rondom de lippen, van mondhoek tot mondhoek over de bovenlip en terug over de onderlip. <b>Lipnaad:</b> klik over de lijn tussen de lippen, van mondhoek naar mondhoek (de eerste en laatste punt zijn de mondhoeken). Sleep een punt om het te verplaatsen.</p>
+      <div class="row"><button id="bUndo">Laatste punt weg</button><button id="bClearMode">Deze lijn wissen</button></div>
+      <p class="small" id="lipInfo"></p>
+    </section>
+
+    <section>
+      <h2>3 · Ogen</h2>
+      <div class="row">
+        <button data-mode="eyeL"><span class="dot" style="background:var(--eye)"></span>Oog links</button>
+        <button data-mode="eyeR"><span class="dot" style="background:var(--eye)"></span>Oog rechts</button>
+      </div>
+      <p class="small">Klik midden op het oog. "Links/rechts" zoals je haar op het scherm ziet.</p>
+      <div id="eyeCtl" hidden>
+        <label>Oogbol, doorsnede <output id="oD"></output></label><input type="range" id="eD" min="0.2" max="3" step="0.01">
+        <label>Dieper in het hoofd <output id="oZ"></output></label><input type="range" id="eZ" min="-1" max="1.5" step="0.01">
+        <label>Oogopening breedte <output id="oRX"></output></label><input type="range" id="eRX" min="0.2" max="3" step="0.01">
+        <label>Oogopening hoogte <output id="oRY"></output></label><input type="range" id="eRY" min="0.1" max="3" step="0.01">
+        <div class="row" style="margin-top:6px">
+          <button data-nudge="0,1">▲</button><button data-nudge="0,-1">▼</button><button data-nudge="-1,0">◀</button><button data-nudge="1,0">▶</button>
+          <label style="display:flex;gap:6px;align-items:center;margin:0 0 0 8px;color:var(--ink)"><input type="checkbox" id="eCut" checked> oog uit het hoofd snijden</label>
+        </div>
+        <div class="row" style="margin-top:6px"><button id="bMirror">Spiegel naar het andere oog</button></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>4 · Binnenkant mond</h2>
+      <p class="small" id="mouthInfo">Kies bij Onderdelen welke delen "Binnenkant mond" zijn (tanden, tandvlees).</p>
+      <div id="mouthCtl" hidden>
+        <label>Grootte <output id="oMS"></output></label><input type="range" id="mS" min="0.3" max="3" step="0.01" value="1">
+        <label>Diepte <output id="oMZ"></output></label><input type="range" id="mZ" min="-1" max="2" step="0.01" value="0.3">
+        <label>Hoogte <output id="oMY"></output></label><input type="range" id="mY" min="-1" max="1" step="0.01" value="0">
+        <label style="display:flex;gap:6px;align-items:center;color:var(--ink)"><input type="checkbox" id="mJaw" checked> onderste helft beweegt mee met de kaak</label>
+      </div>
+    </section>
+
+    <section>
+      <h2>5 · Vormen</h2>
+      <button class="primary" id="bMake">Vormen maken</button>
+      <p class="small" id="makeInfo">Eerst lippen, lipnaad en (liefst) beide ogen aangeven.</p>
+      <div class="row" id="testRow" hidden><button id="bTalk">Praat-test</button><button id="bBlink">Knipper</button><button id="bZero">Alles op 0</button></div>
+      <label id="strLbl" hidden>Sterkte van alle vormen <output id="oStr">100%</output></label><input type="range" id="kStr" min="0.3" max="2" step="0.05" value="1" hidden>
+      <div class="keys" id="keys"></div>
+    </section>
+
+    <section>
+      <h2>6 · Opslaan</h2>
+      <label>Bestandsnaam</label><input type="text" id="outName" value="girl_bust_lumen.glb" style="width:100%;background:#0f1a1e;color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:5px">
+      <div class="row" style="margin-top:8px"><button class="primary" id="bExport">Model opslaan (GLB)</button></div>
+      <div class="row" style="margin-top:8px"><button id="bSaveProj">Punten bewaren</button><label style="margin:0"><button id="bLoadProjBtn" type="button">Punten laden</button></label><input type="file" id="fProj" accept=".json" hidden></div>
+      <p class="small">Het GLB-model zet je in <code>config/www</code> en voeg je toe bij Lumen › Instellingen › 3D-modellen (<code>/local/naam.glb</code>). Lumen gebruikt de vormen dan vanzelf bij praten, knipperen en stemming.</p>
+    </section>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const cv = $('c'), hint = $('hint');
+const R = new THREE.WebGLRenderer({canvas:cv, antialias:true});
+R.setPixelRatio(Math.min(2, devicePixelRatio));
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x06090b);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x223344, 0.75));
+const key = new THREE.DirectionalLight(0xffffff, 0.75); key.position.set(0.6, 1, 2); scene.add(key);
+const cam = new THREE.PerspectiveCamera(30, 1, 0.005, 100);
+const ctl = new THREE.OrbitControls(cam, cv); ctl.enableDamping = true;
+cam.position.set(0, 0, 4);
+function resize(){ const r = cv.parentElement.getBoundingClientRect(); R.setSize(r.width, r.height, false); cam.aspect = r.width/r.height; cam.updateProjectionMatrix(); }
+addEventListener('resize', resize); resize();
+
+/* ---------------- state ---------------- */
+const S = {
+  base:null,        // {P0, N0, name, extras}  triangle soup in model space
+  donor:null,       // {parts:[{name, geo(world, non-indexed), color}], roles:{}}
+  yaw:0,
+  lip:[], seam:[], eyes:{L:null, R:null},   // points in MODEL space (THREE.Vector3)
+  mouth:{s:1, z:0.3, y:0, jaw:true},
+  mode:'view', keys:null, str:1
+};
+const LOADER = new THREE.GLTFLoader();
+const faceMat = new THREE.MeshStandardMaterial({color:0xc2ccd0, roughness:0.62, side:THREE.DoubleSide, morphTargets:true, morphNormals:false});
+let faceMesh = null, eyeObjs = {L:null, R:null}, mouthObj = null;
+const markers = new THREE.Group(); scene.add(markers);
+
+/* ---------------- face frame (Lumen: yaw about Y, the face looks along +z) ---------------- */
+const toF = (v) => { const c = Math.cos(S.yaw), s = Math.sin(S.yaw); return new THREE.Vector3(c*v.x + s*v.z, v.y, -s*v.x + c*v.z); };
+const fromF = (v) => { const c = Math.cos(S.yaw), s = Math.sin(S.yaw); return new THREE.Vector3(c*v.x - s*v.z, v.y, s*v.x + c*v.z); };
+const fwd = () => fromF(new THREE.Vector3(0,0,1));
+
+/* ---------------- loading ---------------- */
+function readGLB(file){ return new Promise((ok, bad) => { const r = new FileReader(); r.onload = () => LOADER.parse(r.result, '', ok, bad); r.onerror = bad; r.readAsArrayBuffer(file); }); }
+function soup(gltf, onlyMeshes){
+  const out = [];
+  gltf.scene.updateMatrixWorld(true);
+  gltf.scene.traverse(o => {
+    if (!o.isMesh || (onlyMeshes && !onlyMeshes.includes(o))) return;
+    const mt = Array.isArray(o.material) ? o.material[0] : o.material;
+    if (mt && (mt.transparent || mt.opacity < 1 || /lens|lense|cornea|tear|glass/i.test(mt.name || ''))) return;   // see-through layers (cornea) would hide the iris
+    let g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+    for (const k of Object.keys(g.attributes)) if (k !== 'position' && k !== 'normal') g.deleteAttribute(k);
+    g.morphAttributes = {};
+    g.applyMatrix4(o.matrixWorld);
+    if (!g.attributes.normal) g.computeVertexNormals();
+    const m = Array.isArray(o.material) ? o.material[0] : o.material;
+    // a mesh with several materials is a group of meshes in three.js: use the group's (node's) name
+    const grp = o.parent && o.parent.isGroup && o.parent !== gltf.scene && o.parent.children.every(c => c.isMesh);
+    out.push({name:(grp ? o.parent.name : o.name) || 'deel', geo:g, color:(m && m.color) ? m.color.clone() : new THREE.Color(0xdddddd)});
+  });
+  return out;
+}
+$('fBase').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try{
+    const gltf = await readGLB(f), parts = soup(gltf);
+    let n = 0; for (const p of parts) n += p.geo.attributes.position.array.length;
+    const P = new Float32Array(n), N = new Float32Array(n); let o = 0;
+    for (const p of parts){ P.set(p.geo.attributes.position.array, o); N.set(p.geo.attributes.normal.array, o); o += p.geo.attributes.position.array.length; }
+    S.base = {P0:P, N0:N, name:f.name, extras:(gltf.asset && gltf.asset.extras) || {}};
+    S.yaw = /girl_bust/i.test(f.name) ? 0.139 : 0;
+    $('outName').value = f.name.replace(/\.(glb|gltf)$/i, '') + '_lumen.glb';
+    S.keys = null; rebuildFace(); frameAll(); viewFront(); updInfo();
+    setHint('Model geladen. Zet het gezicht recht voor je en klik "Dit is het vooraanzicht", of begin met de lippen.');
+  }catch(err){ setHint('Kon dit model niet lezen: ' + err.message); }
+});
+$('fDonor').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try{
+    const gltf = await readGLB(f), parts = soup(gltf);
+    const roles = {};
+    for (const p of parts){ const n = p.name.toLowerCase(); if (roles[p.name]) continue;
+      // "Eye.L" (Blender) is the character's own left eye, which is on the right of the screen
+      roles[p.name] = /eye.*[._ ]l\b|eye_?l$|left/.test(n) ? 'eyeR' : /eye.*[._ ]r\b|eye_?r$|right/.test(n) ? 'eyeL'
+        : /oog.?links/.test(n) ? 'eyeL' : /oog.?rechts/.test(n) ? 'eyeR' : /teeth|tooth|tand|gum|tong|tongue|mouth|mond/.test(n) ? 'mond' : 'niet'; }
+    S.donor = {parts, roles};
+    fillParts(); rebuildParts(); updInfo();
+  }catch(err){ setHint('Kon de onderdelen niet lezen: ' + err.message); }
+});
+function fillParts(){
+  const box = $('parts'); box.textContent = '';
+  if (!S.donor) return;
+  [...new Set(S.donor.parts.map(p => p.name))].forEach(name => {
+    const l = document.createElement('label'); l.append(document.createTextNode(name + ' '));
+    const sel = document.createElement('select');
+    for (const [v, t] of [['eyeL','Oog links (scherm)'],['eyeR','Oog rechts (scherm)'],['mond','Binnenkant mond'],['niet','Niet gebruiken']]){ const o = document.createElement('option'); o.value = v; o.textContent = t; sel.append(o); }
+    sel.value = S.donor.roles[name]; sel.addEventListener('change', () => { S.donor.roles[name] = sel.value; S.keys = null; rebuildParts(); updInfo(); });
+    l.append(sel); box.append(l);
+  });
+}
+
+/* ---------------- face mesh with eye holes ---------------- */
+let keepIdx = null;   // triangle indices kept after cutting the eyes
+function eyeEllipse(e){ // in face space
+  const c = toF(e.c); const d = e.d; return {c, rx:d*0.5*e.rx, ry:d*0.5*e.ry};
+}
+function rebuildFace(){
+  if (!S.base) return;
+  const P0 = S.base.P0, N0 = S.base.N0, T = P0.length/9;
+  const cuts = ['L','R'].map(k => S.eyes[k]).filter(e => e && e.cut).map(eyeEllipse);
+  const keep = [];
+  const v = new THREE.Vector3();
+  for (let t = 0; t < T; t++){
+    let drop = false;
+    if (cuts.length){
+      v.set((P0[t*9]+P0[t*9+3]+P0[t*9+6])/3, (P0[t*9+1]+P0[t*9+4]+P0[t*9+7])/3, (P0[t*9+2]+P0[t*9+5]+P0[t*9+8])/3);
+      const f = toF(v);
+      for (const c of cuts){ const q = ((f.x-c.c.x)/c.rx)**2 + ((f.y-c.c.y)/c.ry)**2; if (q < 1 && Math.abs(f.z - c.c.z) < Math.max(c.rx, c.ry)*1.2){ drop = true; break; } }
+    }
+    if (!drop) keep.push(t);
+  }
+  keepIdx = keep;
+  const P = new Float32Array(keep.length*9), N = new Float32Array(keep.length*9);
+  keep.forEach((t, i) => { P.set(P0.subarray(t*9, t*9+9), i*9); N.set(N0.subarray(t*9, t*9+9), i*9); });
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.BufferAttribute(N, 3));
+  if (faceMesh){ scene.remove(faceMesh); faceMesh.geometry.dispose(); }
+  faceMesh = new THREE.Mesh(g, faceMat); faceMesh.morphTargetInfluences = []; scene.add(faceMesh);
+  S.keys = null; $('keys').textContent = ''; $('testRow').hidden = true; $('kStr').hidden = $('strLbl').hidden = true;
+}
+function frameAll(){
+  const b = new THREE.Box3().setFromBufferAttribute(faceMesh.geometry.attributes.position);
+  const c = b.getCenter(new THREE.Vector3()), s = b.getSize(new THREE.Vector3()).length();
+  S.unit = s; ctl.target.copy(c); cam.near = s/500; cam.far = s*20; cam.updateProjectionMatrix();
+}
+function viewFront(){
+  if (!faceMesh) return;
+  let tgt = ctl.target.clone(), dist = (S.unit || 2)*0.9;
+  const mc = mouthCentre(); if (S.eyes.L && S.eyes.R) tgt = S.eyes.L.c.clone().add(S.eyes.R.c).multiplyScalar(0.5).lerp(mc || tgt, mc ? 0.45 : 0), dist = S.eyes.L.c.distanceTo(S.eyes.R.c)*5;
+  else if (mc) { tgt = mc.clone(); dist = (S.unit || 2)*0.45; }
+  ctl.target.copy(tgt); cam.position.copy(tgt).addScaledVector(fwd(), dist); cam.up.set(0,1,0); ctl.update();
+}
+$('bFront').onclick = viewFront;
+$('bHide').onclick = () => { markers.visible = !markers.visible; $('bHide').textContent = markers.visible ? 'Punten verbergen' : 'Punten tonen'; };
+$('bSetFront').onclick = () => {
+  const d = cam.position.clone().sub(ctl.target); d.y = 0; d.normalize();
+  S.yaw = Math.atan2(-d.x, d.z);      // the face looks towards the camera: (-sin yaw, 0, cos yaw) = d
+  rebuildFace(); rebuildParts(); drawMarkers(); setHint('Vooraanzicht vastgelegd.');
+};
+
+/* ---------------- picking and markers ---------------- */
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+function pick(ev){
+  if (!faceMesh) return null;
+  const r = cv.getBoundingClientRect(); ndc.set((ev.clientX-r.left)/r.width*2-1, -(ev.clientY-r.top)/r.height*2+1);
+  ray.setFromCamera(ndc, cam); const h = ray.intersectObject(faceMesh, false)[0]; return h ? h.point.clone() : null;
+}
+function screenOf(v){ const p = v.clone().project(cam), r = cv.getBoundingClientRect(); return {x:(p.x+1)/2*r.width, y:(1-p.y)/2*r.height}; }
+function nearest(list, ev){
+  const r = cv.getBoundingClientRect(); let best = -1, bd = 12;
+  list.forEach((p, i) => { const s = screenOf(p), d = Math.hypot(s.x-(ev.clientX-r.left), s.y-(ev.clientY-r.top)); if (d < bd){ bd = d; best = i; } });
+  return best;
+}
+const dotTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d');
+  g.fillStyle = '#fff'; g.beginPath(); g.arc(32,32,26,0,7); g.fill(); g.strokeStyle = '#000'; g.lineWidth = 8; g.stroke(); return new THREE.CanvasTexture(c); })();
+function dot(p, col, size){ const s = new THREE.Sprite(new THREE.SpriteMaterial({map:dotTex, color:col, depthTest:false, sizeAttenuation:false})); s.scale.setScalar(size || 0.018); s.position.copy(p); s.renderOrder = 10; return s; }
+function line(pts, col, loop){ const g = new THREE.BufferGeometry().setFromPoints(pts); const l = new (loop ? THREE.LineLoop : THREE.Line)(g, new THREE.LineBasicMaterial({color:col, depthTest:false})); l.renderOrder = 9; return l; }
+function ellipsePts(e){ const el = eyeEllipse(e), out = []; for (let i = 0; i < 48; i++){ const a = i/48*Math.PI*2; out.push(fromF(new THREE.Vector3(el.c.x + Math.cos(a)*el.rx, el.c.y + Math.sin(a)*el.ry, el.c.z + 0.002*(S.unit||1)))); } return out; }
+function drawMarkers(){
+  markers.clear();
+  if (S.lip.length){ S.lip.forEach(p => markers.add(dot(p, 0xff5c8a))); if (S.lip.length > 1) markers.add(line(S.lip, 0xff5c8a, true)); }
+  if (S.seam.length){ S.seam.forEach((p, i) => markers.add(dot(p, 0xffd84a, (i === 0 || i === S.seam.length-1) ? 0.026 : 0.016))); if (S.seam.length > 1) markers.add(line(S.seam, 0xffd84a)); }
+  for (const k of ['L','R']){ const e = S.eyes[k]; if (!e) continue; markers.add(dot(e.c, 0x7dffb0, 0.022)); markers.add(line(ellipsePts(e), 0x7dffb0, true)); }
+}
+let drag = null, downAt = null;
+cv.addEventListener('pointerdown', ev => {
+  if (ev.button !== 0 || !faceMesh) return;
+  downAt = {x:ev.clientX, y:ev.clientY};
+  const list = S.mode === 'lip' ? S.lip : S.mode === 'seam' ? S.seam : null;
+  if (list){ const i = nearest(list, ev); if (i >= 0){ drag = {list, i}; ctl.enabled = false; } }
+  else if ((S.mode === 'eyeL' || S.mode === 'eyeR') && S.eyes[S.mode.slice(3)]){ const e = S.eyes[S.mode.slice(3)]; if (nearest([e.c], ev) === 0){ drag = {eye:e}; ctl.enabled = false; } }
+});
+cv.addEventListener('pointermove', ev => {
+  if (!drag) return; const p = pick(ev); if (!p) return;
+  if (drag.eye) drag.eye.c.copy(p); else drag.list[drag.i].copy(p);
+  drawMarkers(); if (drag.eye) rebuildParts();
+});
+addEventListener('pointerup', ev => {
+  const wasDrag = drag; drag = null; ctl.enabled = true;
+  if (wasDrag){ if (wasDrag.eye){ rebuildFace(); rebuildParts(); } updInfo(); return; }
+  if (!downAt || Math.hypot(ev.clientX-downAt.x, ev.clientY-downAt.y) > 5 || ev.target !== cv) return;
+  const p = pick(ev); if (!p) return;
+  if (S.mode === 'lip') S.lip.push(p);
+  else if (S.mode === 'seam') S.seam.push(p);
+  else if (S.mode === 'eyeL' || S.mode === 'eyeR'){
+    const k = S.mode.slice(3), ed = S.eyes.L || S.eyes.R;
+    const d0 = (ed && ed.d) || (S.unit || 2)*0.06;
+    S.eyes[k] = {c:p, d:d0, z:0.35, rx:(ed && ed.rx) || 1.15, ry:(ed && ed.ry) || 0.75, cut:(ed ? ed.cut : true)};
+    showEye(k); rebuildFace(); rebuildParts();
+  }
+  S.keys = null; drawMarkers(); updInfo();
+});
+
+/* ---------------- modes and controls ---------------- */
+const HINTS = {
+  view:'Draai, verschuif en zoom met de muis.',
+  lip:'Buitenrand: klik rondom de lippen (bovenlip heen, onderlip terug). Sleep een punt om het te verplaatsen.',
+  seam:'Lipnaad: klik van mondhoek naar mondhoek over de lijn tussen de lippen. Eerste en laatste punt = mondhoeken.',
+  eyeL:'Klik midden op het linker oog (zoals je het ziet). Stel daarna grootte en opening in.',
+  eyeR:'Klik midden op het rechter oog (zoals je het ziet). Stel daarna grootte en opening in.'
+};
+function setHint(t){ hint.textContent = t; }
+document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => {
+  S.mode = S.mode === b.dataset.mode ? 'view' : b.dataset.mode;
+  document.querySelectorAll('[data-mode]').forEach(x => x.classList.toggle('on', x.dataset.mode === S.mode));
+  setHint(HINTS[S.mode]);
+  if (S.mode === 'eyeL' || S.mode === 'eyeR') showEye(S.mode.slice(3)); else $('eyeCtl').hidden = true;
+}));
+$('bUndo').onclick = () => { if (S.mode === 'lip') S.lip.pop(); else if (S.mode === 'seam') S.seam.pop(); S.keys = null; drawMarkers(); updInfo(); };
+$('bClearMode').onclick = () => { if (S.mode === 'lip') S.lip = []; else if (S.mode === 'seam') S.seam = []; else if (S.mode === 'eyeL' || S.mode === 'eyeR'){ S.eyes[S.mode.slice(3)] = null; rebuildFace(); rebuildParts(); } S.keys = null; drawMarkers(); updInfo(); };
+let curEye = null;
+function showEye(k){
+  curEye = k; const e = S.eyes[k]; $('eyeCtl').hidden = !e; if (!e) return;
+  const u = S.unit || 2;
+  $('eD').value = e.d/(u*0.06); $('eZ').value = e.z; $('eRX').value = e.rx; $('eRY').value = e.ry; $('eCut').checked = e.cut; eyeOut();
+}
+function eyeOut(){ const e = S.eyes[curEye]; if (!e) return; $('oD').textContent = (e.d).toFixed(3); $('oZ').textContent = Math.round(e.z*100) + '%'; $('oRX').textContent = Math.round(e.rx*100) + '%'; $('oRY').textContent = Math.round(e.ry*100) + '%'; }
+for (const [id, f] of [['eD', (e, v) => e.d = v*(S.unit||2)*0.06], ['eZ', (e, v) => e.z = v], ['eRX', (e, v) => e.rx = v], ['eRY', (e, v) => e.ry = v]])
+  $(id).addEventListener('input', () => { const e = S.eyes[curEye]; if (!e) return; f(e, +$(id).value); eyeOut(); drawMarkers(); rebuildParts(); S.keys = null; });
+['eD','eRX','eRY'].forEach(id => $(id).addEventListener('change', () => { rebuildFace(); rebuildParts(); }));
+$('eCut').addEventListener('change', () => { const e = S.eyes[curEye]; if (!e) return; e.cut = $('eCut').checked; rebuildFace(); rebuildParts(); });
+document.querySelectorAll('[data-nudge]').forEach(b => b.addEventListener('click', () => {
+  const e = S.eyes[curEye]; if (!e) return; const [dx, dy] = b.dataset.nudge.split(',').map(Number), st = e.d*0.03;
+  const f = toF(e.c); f.x += dx*st; f.y += dy*st; e.c.copy(fromF(f)); drawMarkers(); rebuildFace(); rebuildParts(); S.keys = null;
+}));
+$('bMirror').onclick = () => {
+  const e = S.eyes[curEye]; if (!e) return; const o = curEye === 'L' ? 'R' : 'L';
+  const mc = mouthCentre(); const f = toF(e.c), axis = mc ? toF(mc).x : 0;
+  const g = new THREE.Vector3(2*axis - f.x, f.y, f.z);
+  // snap onto the surface: cast along the face direction
+  const from = fromF(new THREE.Vector3(g.x, g.y, g.z + (S.unit||2))), dir = fwd().negate();
+  ray.set(from, dir); const h = faceMesh && ray.intersectObject(faceMesh, false)[0];
+  S.eyes[o] = {...e, c: h ? h.point.clone() : fromF(g)};
+  drawMarkers(); rebuildFace(); rebuildParts(); S.keys = null; updInfo();
+};
+for (const [id, k, fmt] of [['mS','s',v=>Math.round(v*100)+'%'],['mZ','z',v=>Math.round(v*100)+'%'],['mY','y',v=>Math.round(v*100)+'%']])
+  $(id).addEventListener('input', () => { S.mouth[k] = +$(id).value; $('o' + id.toUpperCase()).textContent = fmt(S.mouth[k]); rebuildParts(); });
+$('mJaw').addEventListener('change', () => { S.mouth.jaw = $('mJaw').checked; S.keys = null; });
+
+/* ---------------- mouth landmarks ---------------- */
+function mouthCentre(){ if (S.seam.length >= 2) return S.seam[0].clone().add(S.seam[S.seam.length-1]).multiplyScalar(0.5); if (S.lip.length >= 3){ const c = new THREE.Vector3(); S.lip.forEach(p => c.add(p)); return c.multiplyScalar(1/S.lip.length); } return null; }
+function updInfo(){
+  $('lipInfo').innerHTML = `Buitenrand: <b>${S.lip.length}</b> punten · lipnaad: <b>${S.seam.length}</b> punten` + (S.lip.length && S.lip.length < 6 ? ' <span class="warn">(minstens 6 voor de buitenrand)</span>' : '') + (S.seam.length && S.seam.length < 3 ? ' <span class="warn">(minstens 3 voor de lipnaad)</span>' : '');
+  const hasMouth = S.donor && Object.values(S.donor.roles).includes('mond');
+  $('mouthCtl').hidden = !hasMouth; $('mouthInfo').hidden = hasMouth;
+  const ready = S.lip.length >= 6 && S.seam.length >= 3;
+  $('makeInfo').innerHTML = ready ? (S.eyes.L && S.eyes.R ? '<span class="ok">Klaar om vormen te maken.</span>' : 'Lippen klaar. Zonder ogen worden er geen knipper-vormen gemaakt.') : 'Eerst de buitenrand van de lippen (6+ punten) en de lipnaad (3+ punten).';
+}
+
+/* ---------------- eyeballs and mouth interior from the parts file ---------------- */
+const partsGroup = new THREE.Group(); scene.add(partsGroup);
+function partGeo(i){ return S.donor.parts[i].geo; }
+function partsWith(role){ return S.donor.parts.map((p, i) => i).filter(i => S.donor.roles[S.donor.parts[i].name] === role); }
+function centred(geos){ // merge, return {geo, box}
+  let n = 0; geos.forEach(g => n += g.attributes.position.array.length);
+  const P = new Float32Array(n), N = new Float32Array(n), C = new Float32Array(n); let o = 0;
+  geos.forEach(g => { P.set(g.attributes.position.array, o); N.set(g.attributes.normal.array, o); const c = g.userData.color || new THREE.Color(1,1,1); for (let k = o; k < o + g.attributes.position.array.length; k += 3){ C[k] = c.r; C[k+1] = c.g; C[k+2] = c.b; } o += g.attributes.position.array.length; });
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(P,3)); g.setAttribute('normal', new THREE.BufferAttribute(N,3)); g.setAttribute('color', new THREE.BufferAttribute(C,3));
+  g.computeBoundingBox(); return g;
+}
+const partMat = new THREE.MeshStandardMaterial({vertexColors:true, roughness:0.5, morphTargets:true});
+function rebuildParts(){
+  partsGroup.clear(); eyeObjs = {L:null, R:null}; mouthObj = null;
+  // eyeballs: from the parts file, or a simple sphere with an iris
+  for (const k of ['L','R']){
+    const e = S.eyes[k]; if (!e) continue;
+    let g = null;
+    if (S.donor){ const idx = partsWith('eye' + k); if (idx.length){ idx.forEach(i => partGeo(i).userData.color = S.donor.parts[i].color); g = centred(idx.map(partGeo)); } }
+    if (!g){ const sg = new THREE.SphereGeometry(0.5, 32, 20).toNonIndexed(); const C = new Float32Array(sg.attributes.position.count*3);
+      for (let i = 0; i < sg.attributes.position.count; i++){ const z = sg.attributes.position.getZ(i), r2 = sg.attributes.position.getX(i)**2 + sg.attributes.position.getY(i)**2; const c = z > 0.42 && r2 < 0.06 ? [0.05,0.05,0.06] : z > 0.36 && r2 < 0.12 ? [0.25,0.45,0.6] : [0.95,0.95,0.93]; C.set(c, i*3); }
+      sg.setAttribute('color', new THREE.BufferAttribute(C, 3)); sg.computeBoundingBox(); g = sg; }
+    const bb = g.boundingBox, size = bb.getSize(new THREE.Vector3()), ctr = bb.getCenter(new THREE.Vector3());
+    const m = new THREE.Mesh(g, partMat); m.morphTargetInfluences = [];
+    const sc = e.d / Math.max(size.x, size.y, size.z);
+    m.scale.setScalar(sc); m.rotation.y = -S.yaw;
+    m.position.copy(e.c).addScaledVector(fwd(), -e.z*e.d*0.5);
+    m.position.sub(ctr.clone().multiplyScalar(sc).applyAxisAngle(new THREE.Vector3(0,1,0), -S.yaw));
+    partsGroup.add(m); eyeObjs[k] = m;
+  }
+  // mouth interior
+  if (S.donor){
+    const idx = partsWith('mond');
+    if (idx.length){
+      idx.forEach(i => partGeo(i).userData.color = S.donor.parts[i].color);
+      const g = centred(idx.map(partGeo)), bb = g.boundingBox, size = bb.getSize(new THREE.Vector3());
+      const teeth = idx.find(i => /teeth|tooth|tand(?!vlees)/i.test(S.donor.parts[i].name));
+      let refW = size.x; if (teeth != null){ const tb = new THREE.Box3().setFromBufferAttribute(partGeo(teeth).attributes.position); refW = tb.getSize(new THREE.Vector3()).x; }
+      const anchor = teeth != null ? new THREE.Box3().setFromBufferAttribute(partGeo(teeth).attributes.position) : bb;
+      const a = new THREE.Vector3((anchor.min.x+anchor.max.x)/2, (anchor.min.y+anchor.max.y)/2, anchor.max.z);
+      const mc = mouthCentre();
+      if (mc && S.seam.length >= 2){
+        const mw = S.seam[0].distanceTo(S.seam[S.seam.length-1]);
+        const sc = mw*1.15/refW*S.mouth.s;
+        const m = new THREE.Mesh(g, partMat); m.morphTargetInfluences = []; m.scale.setScalar(sc); m.rotation.y = -S.yaw;
+        const target = mc.clone().addScaledVector(fwd(), -S.mouth.z*mw*0.25).add(new THREE.Vector3(0, S.mouth.y*mw*0.25, 0));
+        m.position.copy(target).sub(a.clone().multiplyScalar(sc).applyAxisAngle(new THREE.Vector3(0,1,0), -S.yaw));
+        m.userData.anchorY = (anchor.min.y+anchor.max.y)/2; m.userData.sc = sc;
+        partsGroup.add(m); mouthObj = m;
+      }
+      $('oMS').textContent = Math.round(S.mouth.s*100) + '%'; $('oMZ').textContent = Math.round(S.mouth.z*100) + '%'; $('oMY').textContent = Math.round(S.mouth.y*100) + '%';
+    }
+  }
+}
+
+/* ---------------- shape keys ---------------- */
+const ss = (e0, e1, v) => { const t = Math.min(1, Math.max(0, (v-e0)/(e1-e0))); return t*t*(3-2*t); };
+const gs = (d2, r) => Math.exp(-d2/(r*r));
+function inPoly(x, y, poly){ let c = false; for (let i = 0, j = poly.length-1; i < poly.length; j = i++){ const a = poly[i], b = poly[j]; if ((a.y > y) !== (b.y > y) && x < (b.x-a.x)*(y-a.y)/(b.y-a.y) + a.x) c = !c; } return c; }
+function segDist(x, y, poly, closed){ let best = 1e9; const n = poly.length; for (let i = 0; i < (closed ? n : n-1); i++){ const a = poly[i], b = poly[(i+1)%n]; const dx = b.x-a.x, dy = b.y-a.y, L = dx*dx+dy*dy || 1e-12; const t = Math.max(0, Math.min(1, ((x-a.x)*dx + (y-a.y)*dy)/L)); best = Math.min(best, Math.hypot(x-(a.x+t*dx), y-(a.y+t*dy))); } return best; }
+function makeKeys(){
+  if (!(S.lip.length >= 6 && S.seam.length >= 3)){ updInfo(); return; }
+  const g = faceMesh.geometry, P = g.attributes.position.array, n = P.length/3;
+  const F = new Float32Array(n*3); const v = new THREE.Vector3();
+  for (let i = 0; i < n; i++){ v.set(P[i*3], P[i*3+1], P[i*3+2]); const f = toF(v); F[i*3] = f.x; F[i*3+1] = f.y; F[i*3+2] = f.z; }
+  const lip = S.lip.map(toF), seam = S.seam.map(toF).sort((a, b) => a.x - b.x);
+  const cL = seam[0], cR = seam[seam.length-1];
+  const M = cL.clone().add(cR).multiplyScalar(0.5); M.z = Math.max(...seam.map(p => p.z));
+  const MW = Math.abs(cR.x - cL.x)/2, k = MW/0.15;           // all distances were tuned on a mouth half-width of 0.15
+  const seamY = x => { if (x <= seam[0].x) return seam[0].y; for (let i = 1; i < seam.length; i++) if (x <= seam[i].x){ const a = seam[i-1], b = seam[i], t = (x-a.x)/((b.x-a.x) || 1e-9); return a.y + t*(b.y-a.y); } return seam[seam.length-1].y; };
+  const eyes = ['L','R'].map(e => S.eyes[e]).filter(Boolean).map(e => ({c:toF(e.c), rx:e.d*0.5*e.rx, ry:e.d*0.5*e.ry, cut:e.cut}));
+  // per vertex helpers
+  const x = i => F[i*3], y = i => F[i*3+1], z = i => F[i*3+2];
+  const front = new Float32Array(n), lipW = new Float32Array(n), below = new Float32Array(n), CY = new Float32Array(n);
+  for (let t = 0; t < n/3; t++){ const cx = (F[t*9]+F[t*9+3]+F[t*9+6])/3, cy = (F[t*9+1]+F[t*9+4]+F[t*9+7])/3; const b = cy < seamY(cx) ? 1 : 0; for (let j = 0; j < 3; j++) CY[t*3+j] = b; }
+  for (let i = 0; i < n; i++){
+    front[i] = z(i) > M.z - 0.30*k ? 1 : 0;
+    const inside = inPoly(x(i), y(i), lip), d = segDist(x(i), y(i), lip, true);
+    lipW[i] = front[i] * (inside ? 1 : ss(0.06*k, 0.0, d));
+    below[i] = CY[i];
+  }
+  const D = () => new Float32Array(n*3);
+  function jaw(a){
+    const d = D(), piv = [M.x, seamY(M.x) + 0.08*k, M.z - 0.40*k];
+    for (let i = 0; i < n; i++){
+      if (!front[i]) continue;
+      const sy = seamY(x(i));
+      const soft = ss(sy + 0.004*k, sy - 0.007*k, y(i));
+      const inm = lipW[i] > 0 ? Math.max(lipW[i], 0) : 0;
+      let w = soft*(1-inm) + below[i]*inm;
+      w *= ss(0.55*k, 0.32*k, Math.abs(x(i)-M.x)) * ss(sy - 0.75*k, sy - 0.45*k, y(i));
+      if (!w) continue;
+      const an = a*w, dy = y(i)-piv[1], dz = z(i)-piv[2];
+      d[i*3+1] = piv[1] + dy*Math.cos(an) - dz*Math.sin(an) - y(i);
+      d[i*3+2] = piv[2] + dy*Math.sin(an) + dz*Math.cos(an) - z(i);
+    }
+    return d;
+  }
+  function corners(dxo, dy, dz, r){ r = (r || 0.06)*k; const d = D();
+    for (const [c, side] of [[cL, -1], [cR, 1]]) for (let i = 0; i < n; i++){ if (!front[i]) continue;
+      const w = gs((x(i)-c.x)**2 + ((y(i)-c.y)*1.3)**2 + ((z(i)-c.z)*0.6)**2, r); if (w < 1e-4) continue;
+      d[i*3] += side*dxo*k*w; d[i*3+1] += dy*k*w; d[i*3+2] += dz*k*w; }
+    return d; }
+  function lipsFwd(amt){ const d = D(); for (let i = 0; i < n; i++){ const w = lipW[i]; if (!w) continue; d[i*3+2] += amt*k*w; d[i*3] += -(x(i)-M.x)*0.35*w*Math.min(1, Math.abs(amt)/0.03)*Math.sign(amt); } return d; }
+  function lids(e, amt){ const d = D(); if (!e) return d;
+    const rx = e.rx*1.0, ry = e.ry*1.05, seamOff = -ry*0.28;
+    for (let i = 0; i < n; i++){ if (!front[i]) continue;
+      const q = Math.sqrt(((x(i)-e.c.x)/rx)**2 + ((y(i)-e.c.y)/ry)**2); if (q > 1.6) continue;
+      if (Math.abs(z(i)-e.c.z) > Math.max(rx, ry)*1.6) continue;
+      const kk = ss(1.55, 0.95, q) * ss(e.c.y + ry*1.7, e.c.y + ry*1.15, y(i));
+      d[i*3+1] = (e.c.y + seamOff - y(i))*0.93*kk*amt;
+      d[i*3+2] = 0.006*k*kk*amt; }
+    return d; }
+  function brows(e, up, innerDown){ const d = D(); if (!e) return d;
+    for (let i = 0; i < n; i++){ if (!front[i]) continue;
+      const w = gs((x(i)-e.c.x)**2*0.7 + ((y(i)-(e.c.y + e.ry*1.75))*1.4)**2, Math.max(e.rx, 0.07*k)); if (w < 1e-4) continue;
+      const inner = Math.max(0, 1 - Math.abs(x(i)-M.x)/(0.25*k));
+      d[i*3+1] += (up - (innerDown || 0)*inner)*k*w; d[i*3+2] += 0.004*k*Math.sign(up || 1e-9)*w; }
+    return d; }
+  function cheeks(up){ const d = D(); for (const side of [-1, 1]){ const cx = M.x + side*0.17*k, cy = seamY(M.x) + 0.15*k;
+    for (let i = 0; i < n; i++){ if (!front[i]) continue; const w = gs((x(i)-cx)**2 + ((y(i)-cy)*1.2)**2, 0.07*k); if (w < 1e-4) continue; d[i*3+1] += up*k*w; d[i*3+2] += up*0.4*k*w; } } return d; }
+  const add = (...ds) => { const o = D(); for (const d of ds) for (let i = 0; i < o.length; i++) o[i] += d[i]; return o; };
+  const EL = eyes[0], ER = eyes[1];
+  const K = {
+    mond_a: add(jaw(0.15), corners(0.006, -0.004, 0)),
+    mond_e: add(jaw(0.065), corners(0.034, 0.006, -0.014)),
+    mond_i: add(jaw(0.05), corners(0.045, 0.012, -0.016)),
+    mond_o: add(jaw(0.11), corners(-0.04, 0, 0.012), lipsFwd(0.018)),
+    mond_u: add(jaw(0.06), corners(-0.055, 0, 0.016), lipsFwd(0.032)),
+    mond_m: add(corners(0.006, 0, -0.006), lipsFwd(-0.012)),
+    mond_f: add(jaw(0.05), lipsFwd(-0.010), corners(0.012, 0.004, 0)),
+    lach: add(corners(0.032, 0.042, -0.016), cheeks(0.018), lids(EL, 0.18), lids(ER, 0.18)),
+    verdriet: add(corners(-0.006, -0.034, 0), brows(EL, 0.012, -0.01), brows(ER, 0.012, -0.01)),
+    verbazing: add(jaw(0.11), corners(-0.02, 0, 0.008), brows(EL, 0.036), brows(ER, 0.036)),
+    boos: add(brows(EL, 0, 0.034), brows(ER, 0, 0.034), corners(-0.008, -0.014, 0), lids(EL, 0.2), lids(ER, 0.2)),
+    wenkbrauwen_op: add(brows(EL, 0.034), brows(ER, 0.034)),
+  };
+  if (EL && ER){ K.knipper = add(lids(EL, 1), lids(ER, 1)); K.knipoog_links = lids(EL, 1); K.knipoog_rechts = lids(ER, 1); K.ogen_smal = add(lids(EL, 0.5), lids(ER, 0.5), cheeks(0.008)); }
+  // back to model space
+  const c = Math.cos(S.yaw), s = Math.sin(S.yaw);
+  for (const name in K){ const d = K[name]; for (let i = 0; i < n; i++){ const fx = d[i*3], fz = d[i*3+2]; d[i*3] = c*fx - s*fz; d[i*3+2] = s*fx + c*fz; } }
+  S.keys = K; S.jawPivot = {M, MW, k, piv:fromF(new THREE.Vector3(M.x, seamY(M.x) + 0.08*k, M.z - 0.40*k)), seamY:seamY(M.x)};
+  applyKeysToMesh(); buildSliders();
+}
+function applyKeysToMesh(){
+  const old = faceMesh.geometry, g = new THREE.BufferGeometry(); g.setAttribute('position', old.attributes.position); g.setAttribute('normal', old.attributes.normal); faceMesh.geometry = g;
+  const names = Object.keys(S.keys);
+  g.morphAttributes.position = names.map(nm => { const d = S.keys[nm].slice(); for (let i = 0; i < d.length; i++) d[i] *= S.str; return new THREE.BufferAttribute(d, 3); });
+  g.morphTargetsRelative = true; faceMesh.updateMorphTargets();
+  faceMesh.morphTargetDictionary = {}; names.forEach((nm, i) => faceMesh.morphTargetDictionary[nm] = i);
+  faceMesh.morphTargetInfluences = names.map(() => 0);
+  // lower teeth follow the jaw in the preview
+  if (mouthObj && S.mouth.jaw){
+    mouthObj.updateMatrixWorld(true);
+    const om = mouthObj.geometry, mg = new THREE.BufferGeometry(); for (const a of ['position','normal','color']) if (om.attributes[a]) mg.setAttribute(a, om.attributes[a]); mg.boundingBox = om.boundingBox; mouthObj.geometry = mg;
+    const pos = mg.attributes.position, n = pos.count;
+    const jaws = {mond_a:0.15, mond_e:0.065, mond_i:0.05, mond_o:0.11, mond_u:0.06, mond_f:0.05, verbazing:0.11};
+    const md = Object.keys(S.keys).map(nm => { const a = (jaws[nm] || 0)*S.str, d = new Float32Array(n*3); if (!a) return new THREE.BufferAttribute(d, 3);
+      for (let i = 0; i < n; i++){ const ly = pos.getY(i); if (ly > mouthObj.userData.anchorY) continue;
+        const wp = new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i)).applyMatrix4(mouthObj.matrixWorld);
+        const lp = toF(wp), pv = toF(S.jawPivot.piv); const dy = lp.y - pv.y, dz = lp.z - pv.z;
+        const ny = pv.y + dy*Math.cos(a) - dz*Math.sin(a), nz = pv.z + dy*Math.sin(a) + dz*Math.cos(a);
+        const nw = fromF(new THREE.Vector3(lp.x, ny, nz)); const back = mouthObj.worldToLocal(nw.clone());
+        d[i*3] = back.x - pos.getX(i); d[i*3+1] = back.y - pos.getY(i); d[i*3+2] = back.z - pos.getZ(i); }
+      return new THREE.BufferAttribute(d, 3); });
+    mg.morphAttributes.position = md; mg.morphTargetsRelative = true; mouthObj.updateMorphTargets();
+    mouthObj.morphTargetInfluences = Object.keys(S.keys).map(() => 0);
+  }
+}
+const keyIn = {};
+function buildSliders(){
+  const box = $('keys'); box.textContent = '';
+  for (const nm of Object.keys(S.keys)){
+    const l = document.createElement('span'); l.textContent = nm.replace('_', ' ');
+    const r = document.createElement('input'); r.type = 'range'; r.min = 0; r.max = 1; r.step = 0.01; r.value = 0;
+    r.addEventListener('input', () => setW(nm, +r.value)); keyIn[nm] = r; box.append(l, r);
+  }
+  $('testRow').hidden = false; $('kStr').hidden = $('strLbl').hidden = false;
+  setHint('Vormen gemaakt. Probeer de schuiven, de Praat-test en Knipper. Niet goed? Verplaats punten en klik opnieuw "Vormen maken".');
+}
+function setW(nm, w){ const i = faceMesh.morphTargetDictionary[nm]; if (i == null) return; faceMesh.morphTargetInfluences[i] = w; if (mouthObj && mouthObj.morphTargetInfluences) mouthObj.morphTargetInfluences[i] = w; if (keyIn[nm]) keyIn[nm].value = w; }
+$('bMake').onclick = () => { if (!faceMesh) return; setHint('Bezig met rekenen…'); setTimeout(() => { rebuildParts(); makeKeys(); updInfo(); }, 30); };
+$('kStr').addEventListener('input', () => { S.str = +$('kStr').value; $('oStr').textContent = Math.round(S.str*100) + '%'; if (S.keys) applyKeysToMesh(); });
+let talking = false, blinkAt = -1;
+$('bTalk').onclick = () => { talking = !talking; $('bTalk').classList.toggle('on', talking); if (!talking) zeroAll(); };
+$('bBlink').onclick = () => { blinkAt = performance.now(); };
+$('bZero').onclick = () => { talking = false; $('bTalk').classList.remove('on'); zeroAll(); };
+function zeroAll(){ if (!S.keys) return; for (const nm of Object.keys(S.keys)) setW(nm, 0); }
+const VIS = ['mond_a','mond_e','mond_o','mond_i','mond_u','mond_m','mond_f','mond_a','mond_e'];
+let visT = 0, vis = null, visW = {};
+function talkTick(dt){
+  if (!S.keys) return;
+  if (talking){ visT -= dt; if (visT <= 0){ vis = VIS[(Math.random()*VIS.length)|0]; visT = 0.07 + Math.random()*0.07; }
+    for (const nm of VIS){ const tgt = nm === vis ? 0.5 + Math.random()*0.5 : 0; visW[nm] = (visW[nm] || 0) + (tgt - (visW[nm] || 0))*Math.min(1, dt*18); setW(nm, visW[nm]); } }
+  if (blinkAt > 0 && S.keys.knipper){ const p = (performance.now() - blinkAt)/160; setW('knipper', p < 1 ? 1 - Math.abs(1 - 2*p) : 0); if (p >= 1) blinkAt = -1; }
+}
+
+/* ---------------- export: GLB with sparse morph targets ---------------- */
+function writeGLB(){
+  if (!faceMesh) return;
+  const bin = []; let len = 0; const json = {asset:{version:'2.0', generator:'Lumen Gezichtseditor', extras:{...S.base.extras}}, scene:0, scenes:[{nodes:[0]}], nodes:[{name:'Lumen_hoofd', children:[]}], meshes:[], accessors:[], bufferViews:[], buffers:[], materials:[]};
+  json.asset.extras.changes = ((S.base.extras && S.base.extras.changes) ? S.base.extras.changes + '; ' : '') + 'face shape keys, eyeballs and mouth interior added with the Lumen face editor';
+  const view = (arr, target) => { while (len % 4){ bin.push(new Uint8Array(1)); len++; } const u8 = new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength); bin.push(u8); const v = {buffer:0, byteOffset:len, byteLength:u8.byteLength}; if (target) v.target = target; json.bufferViews.push(v); len += u8.byteLength; return json.bufferViews.length - 1; };
+  const vec3 = (arr) => { let mn = [1e9,1e9,1e9], mx = [-1e9,-1e9,-1e9]; for (let i = 0; i < arr.length; i += 3) for (let j = 0; j < 3; j++){ mn[j] = Math.min(mn[j], arr[i+j]); mx[j] = Math.max(mx[j], arr[i+j]); } return {mn, mx}; };
+  const acc = (arr, minmax) => { const v = view(arr, 34962); const a = {bufferView:v, componentType:5126, count:arr.length/3, type:'VEC3'}; if (minmax){ const r = vec3(arr); a.min = r.mn; a.max = r.mx; } json.accessors.push(a); return json.accessors.length - 1; };
+  const addMat = (name, col) => { json.materials.push({name, pbrMetallicRoughness:{baseColorFactor:[col.r, col.g, col.b, 1], metallicFactor:0, roughnessFactor:0.6}}); return json.materials.length - 1; };
+  function addMesh(name, P, N, mat, morphs, names, colors){
+    const prim = {attributes:{POSITION:acc(P, true), NORMAL:acc(N)}, material:mat};
+    if (colors) prim.attributes.COLOR_0 = acc(colors);
+    if (morphs && morphs.length){
+      prim.targets = morphs.map(d => {
+        const idx = []; for (let i = 0; i < d.length/3; i++) if (Math.abs(d[i*3]) + Math.abs(d[i*3+1]) + Math.abs(d[i*3+2]) > 1e-6) idx.push(i);
+        const I = Uint32Array.from(idx), V = new Float32Array(idx.length*3); idx.forEach((i, k) => { V[k*3] = d[i*3]; V[k*3+1] = d[i*3+1]; V[k*3+2] = d[i*3+2]; });
+        const r = idx.length ? vec3(V) : {mn:[0,0,0], mx:[0,0,0]};
+        json.accessors.push({componentType:5126, count:P.length/3, type:'VEC3', min:r.mn, max:r.mx, sparse:{count:idx.length, indices:{bufferView:view(I), componentType:5125}, values:{bufferView:view(V)}}});
+        return {POSITION:json.accessors.length - 1};
+      });
+    }
+    const mesh = {name, primitives:[prim]}; if (morphs && morphs.length){ mesh.weights = morphs.map(() => 0); mesh.extras = {targetNames:names}; }
+    json.meshes.push(mesh); json.nodes.push({name, mesh:json.meshes.length - 1}); json.nodes[0].children.push(json.nodes.length - 1);
+  }
+  const fg = faceMesh.geometry, names = S.keys ? Object.keys(S.keys) : [];
+  addMesh('Gezicht', fg.attributes.position.array, fg.attributes.normal.array, addMat('Huid', new THREE.Color(0xd8d8d8)), names.map(nm => { const d = S.keys[nm].slice(); for (let i = 0; i < d.length; i++) d[i] *= S.str; return d; }), names);
+  // eyeballs and mouth interior: baked into model space
+  const bake = (obj, nm) => {
+    obj.updateMatrixWorld(true); const g = obj.geometry.clone(); g.morphAttributes = {}; g.applyMatrix4(obj.matrixWorld);
+    const morphs = []; if (obj === mouthObj && obj.geometry.morphAttributes.position && S.keys){
+      const m3 = new THREE.Matrix3().setFromMatrix4(obj.matrixWorld), v = new THREE.Vector3();
+      obj.geometry.morphAttributes.position.forEach(a => { const d = new Float32Array(a.array.length); for (let i = 0; i < a.count; i++){ v.set(a.getX(i), a.getY(i), a.getZ(i)).applyMatrix3(m3); d[i*3] = v.x; d[i*3+1] = v.y; d[i*3+2] = v.z; } morphs.push(d); }); }
+    addMesh(nm, g.attributes.position.array, g.attributes.normal.array, addMat(nm, new THREE.Color(0xffffff)), morphs, morphs.length ? names : null, g.attributes.color ? g.attributes.color.array : null);
+  };
+  if (eyeObjs.L) bake(eyeObjs.L, 'Oog_links'); if (eyeObjs.R) bake(eyeObjs.R, 'Oog_rechts'); if (mouthObj) bake(mouthObj, 'Mond_binnen');
+  while (len % 4){ bin.push(new Uint8Array(1)); len++; }
+  json.buffers.push({byteLength:len});
+  const enc = new TextEncoder(); let js = enc.encode(JSON.stringify(json)); const pad = (4 - js.length % 4) % 4; if (pad){ const t = new Uint8Array(js.length + pad); t.set(js); t.fill(32, js.length); js = t; }
+  const total = 12 + 8 + js.length + 8 + len, out = new Uint8Array(total), dv = new DataView(out.buffer);
+  dv.setUint32(0, 0x46546C67, true); dv.setUint32(4, 2, true); dv.setUint32(8, total, true);
+  dv.setUint32(12, js.length, true); dv.setUint32(16, 0x4E4F534A, true); out.set(js, 20);
+  let o = 20 + js.length; dv.setUint32(o, len, true); dv.setUint32(o + 4, 0x004E4942, true); o += 8;
+  for (const b of bin){ out.set(b, o); o += b.byteLength; }
+  return out;
+}
+function download(data, name, type){ const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], {type})); a.download = name; document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); }
+$('bExport').onclick = () => {
+  if (!faceMesh) return; if (!S.keys && S.lip.length >= 6 && S.seam.length >= 3) makeKeys();
+  const glb = writeGLB(); download(glb, $('outName').value || 'model_lumen.glb', 'model/gltf-binary');
+  setHint('Opgeslagen: ' + ($('outName').value) + ' (' + Math.round(glb.byteLength/1024) + ' kB).');
+};
+$('bSaveProj').onclick = () => {
+  const v = p => [p.x, p.y, p.z];
+  const proj = {v:1, model:S.base && S.base.name, yaw:S.yaw, lip:S.lip.map(v), seam:S.seam.map(v), eyes:Object.fromEntries(['L','R'].map(k => [k, S.eyes[k] ? {...S.eyes[k], c:v(S.eyes[k].c)} : null])), mouth:S.mouth, str:S.str, roles:S.donor ? S.donor.roles : null};
+  download(JSON.stringify(proj, null, 1), ((S.base && S.base.name) || 'model').replace(/\.(glb|gltf)$/i, '') + '_punten.json', 'application/json');
+};
+$('bLoadProjBtn').onclick = () => $('fProj').click();
+$('fProj').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return; const p = JSON.parse(await f.text()), V = a => new THREE.Vector3(a[0], a[1], a[2]);
+  S.yaw = p.yaw || 0; S.lip = (p.lip || []).map(V); S.seam = (p.seam || []).map(V);
+  for (const k of ['L','R']) S.eyes[k] = p.eyes && p.eyes[k] ? {...p.eyes[k], c:V(p.eyes[k].c)} : null;
+  if (p.mouth) S.mouth = p.mouth; if (p.str) S.str = p.str;
+  if (p.roles && S.donor) S.donor.roles = p.roles, fillParts();
+  ['mS','mZ','mY'].forEach((id, i) => $(id).value = S.mouth[['s','z','y'][i]]); $('mJaw').checked = S.mouth.jaw !== false;
+  rebuildFace(); rebuildParts(); drawMarkers(); updInfo(); setHint('Punten geladen' + (p.model && S.base && p.model !== S.base.name ? ' (let op: gemaakt voor ' + p.model + ')' : '') + '.');
+});
+
+/* ---------------- loop ---------------- */
+let last = performance.now();
+function loop(now){ const dt = Math.min(0.05, (now - last)/1000); last = now; ctl.update(); talkTick(dt); R.render(scene, cam); requestAnimationFrame(loop); }
+requestAnimationFrame(loop);
+window.__editor = S;
+</script>
+</body>
+</html>
