@@ -1,6 +1,6 @@
 name: Release check
 
-# When you publish a release (tag like v2026.10.26), check that the tag matches the version in manifest.json.
+# When you publish a release (tag like v2026.10.26 or v2026.10.26b), check that the tag matches the version in manifest.json.
 on:
   release:
     types: [published]
@@ -17,4 +17,5 @@ jobs:
           v=$(python3 -c "import json;print(json.load(open('custom_components/lumen/manifest.json'))['version'])")
           t="${GITHUB_REF_NAME#v}"
           echo "manifest $v, tag $t"
-          test "$v" = "$t"
+          # the tag may carry a letter for a same-day update, e.g. v2026.10.30d for manifest 2026.10.30
+          case "$t" in "$v"|"$v"[a-z]) exit 0;; *) echo "Tag and manifest version differ"; exit 1;; esac
