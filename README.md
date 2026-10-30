@@ -43,6 +43,9 @@ screen for your house: climate, lights, energy, media and cameras.
 - **Guard mode**, **night question**, **doorbell** and **animal at the door** banners, weather
   warnings and the waste calendar, all driven by Home Assistant helpers.
 - **Raspberry Pi status** (CPU, temperature, memory, disk) on every page.
+- **Expressive face with shape keys**: give a model mouth shapes, blinking and moods with the
+  included [face editor](#face-editor-shape-keys); Lumen uses them while talking, listening and thinking.
+- **Screens in Dutch, English, German and French** (Lumen › Instellingen › Schermtaal).
 
 Every feature is optional: when the entities it needs are missing, Lumen simply hides it.
 
@@ -102,6 +105,26 @@ integration is only the default for screens that have no setting of their own.
 
 **3D models**: `girl_bust.glb` is included. Put your own models in `/config/www/` and list them
 as `/local/your_model.glb`. The 3D house model is optional (`/local/lumen/house.glb` by default).
+
+## Face editor (shape keys)
+
+[`tools/gezicht-editor.html`](tools/gezicht-editor.html) is a stand-alone page: download it and
+open it in Chrome or Edge on your computer (it needs internet for three.js).
+
+1. Load the head model (`.glb`), and optionally a second `.glb` with eyeballs and the inside of
+   a mouth (teeth, gums). Choose per part whether it is the left eye, the right eye or the mouth.
+2. Click around the **outline of the lips**, then along the **line between the lips** from corner
+   to corner.
+3. Click the middle of each **eye** and set the exact eyeball size, depth and eye opening; the old
+   eye can be cut out so the new eyeball fits.
+4. **Make shapes** creates 16 shape keys: `mond_a`, `mond_e`, `mond_i`, `mond_o`, `mond_u`,
+   `mond_m`, `mond_f`, `knipper`, `knipoog_links`, `knipoog_rechts`, `ogen_smal`, `lach`,
+   `verdriet`, `verbazing`, `boos`, `wenkbrauwen_op`. Test them with sliders, the talk test and blink.
+5. **Save model** gives a `.glb` with the shape keys. Put it in `/config/www/` and add it in
+   Lumen › Instellingen › 3D-modellen.
+
+Any model whose shape keys use these names works, also one made in Blender. Keep the licence of
+models you use in mind before sharing them.
 
 ## Security and privacy
 
