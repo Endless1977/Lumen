@@ -48,7 +48,7 @@ button.primary{background:var(--accent);color:#03181c;border-color:var(--accent)
       <label>Onderdelen: ogen en binnenkant mond (GLB, optioneel)</label><input type="file" id="fDonor" accept=".glb,.gltf">
       <div class="parts" id="parts"></div>
       <div class="row" style="margin-top:8px">
-        <button id="bFront">Vooraanzicht</button><button id="bSetFront">Dit is het vooraanzicht</button><button id="bHide">Punten verbergen</button>
+        <button id="bFront">Vooraanzicht</button><button id="bSetFront">Dit is het vooraanzicht</button><button id="bHide">Lijnen verbergen</button><button id="bXray">Röntgen</button>
       </div>
       <p class="small">Draai het hoofd met de muis (rechts slepen = verschuiven, scrollen = zoomen). Kijkt het gezicht recht naar je, klik dan "Dit is het vooraanzicht".</p>
     </section>
@@ -59,8 +59,10 @@ button.primary{background:var(--accent);color:#03181c;border-color:var(--accent)
         <button data-mode="lip"><span class="dot" style="background:var(--lip)"></span>Buitenrand lippen</button>
         <button data-mode="seam"><span class="dot" style="background:var(--seam)"></span>Lipnaad</button>
       </div>
-      <p class="small"><b>Buitenrand:</b> klik rondom de lippen, van mondhoek tot mondhoek over de bovenlip en terug over de onderlip. <b>Lipnaad:</b> klik over de lijn tussen de lippen, van mondhoek naar mondhoek (de eerste en laatste punt zijn de mondhoeken). Sleep een punt om het te verplaatsen.</p>
-      <div class="row"><button id="bUndo">Laatste punt weg</button><button id="bClearMode">Deze lijn wissen</button></div>
+      <p class="small"><b>Buitenrand:</b> klik rondom de lippen, over de bovenlip heen en over de onderlip terug. <b>Lipnaad:</b> klik over de lijn tussen de lippen, van mondhoek naar mondhoek (begin en eind zijn de mondhoeken). Je klikken worden een vloeiende lijn.</p>
+      <p class="small"><b>Bijstellen:</b> sleep een handvat, of pak de lijn zelf vast en sleep (er komt dan een handvat bij). Dubbelklik op een handvat om het weg te halen. De handvatten zie je alleen terwijl je die lijn bewerkt.</p>
+      <p class="small">Buiten de lippen rekt de huid stevig-elastisch mee. Binnen de buitenrand zijn de lippen extra elastisch. De mond gaat alleen open over de lipnaad, tussen de mondhoeken.</p>
+      <div class="row"><button id="bUndo">Laatste handvat weg</button><button id="bClearMode">Deze lijn wissen</button></div>
       <p class="small" id="lipInfo"></p>
     </section>
 
@@ -70,8 +72,11 @@ button.primary{background:var(--accent);color:#03181c;border-color:var(--accent)
         <button data-mode="eyeL"><span class="dot" style="background:var(--eye)"></span>Oog links</button>
         <button data-mode="eyeR"><span class="dot" style="background:var(--eye)"></span>Oog rechts</button>
       </div>
-      <p class="small">Klik midden op het oog. "Links/rechts" zoals je haar op het scherm ziet.</p>
+      <p class="small">Klik midden op het oog. "Links/rechts" zoals je haar op het scherm ziet. Zitten er oogbollen in het model, dan klikt het oog vanzelf vast op de bol.</p>
+      <div class="row"><button id="bFindEyes">Oogbollen in het model zoeken</button></div>
+      <p class="small" id="eyeFind"></p>
       <div id="eyeCtl" hidden>
+        <label id="eKeepL" hidden>Oogbol <select id="eKeep" style="width:100%;background:#0f1a1e;color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:3px"><option value="1">de bol uit het model houden</option><option value="0">vervangen (onderdelen of ingebouwde oogbol)</option></select></label>
         <label>Oogbol, doorsnede <output id="oD"></output></label><input type="range" id="eD" min="0.2" max="3" step="0.01">
         <label>Dieper in het hoofd <output id="oZ"></output></label><input type="range" id="eZ" min="-1" max="1.5" step="0.01">
         <label>Oogopening breedte <output id="oRX"></output></label><input type="range" id="eRX" min="0.2" max="3" step="0.01">
@@ -117,6 +122,11 @@ button.primary{background:var(--accent);color:#03181c;border-color:var(--accent)
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/lines/LineSegmentsGeometry.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/lines/LineGeometry.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/lines/LineMaterial.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/lines/LineSegments2.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/lines/Line2.js"></script>
 <script>
 'use strict';
 const $ = id => document.getElementById(id);
@@ -129,7 +139,7 @@ const key = new THREE.DirectionalLight(0xffffff, 0.75); key.position.set(0.6, 1,
 const cam = new THREE.PerspectiveCamera(30, 1, 0.005, 100);
 const ctl = new THREE.OrbitControls(cam, cv); ctl.enableDamping = true;
 cam.position.set(0, 0, 4);
-function resize(){ const r = cv.parentElement.getBoundingClientRect(); R.setSize(r.width, r.height, false); cam.aspect = r.width/r.height; cam.updateProjectionMatrix(); }
+function resize(){ const r = cv.parentElement.getBoundingClientRect(); R.setSize(r.width, r.height, false); cam.aspect = r.width/r.height; cam.updateProjectionMatrix(); try{ markers.traverse(o => { if (o.material && o.material.resolution) o.material.resolution.set(r.width, r.height); }); }catch(e){} }
 addEventListener('resize', resize); resize();
 
 /* ---------------- state ---------------- */
@@ -139,10 +149,14 @@ const S = {
   yaw:0,
   lip:[], seam:[], eyes:{L:null, R:null},   // points in MODEL space (THREE.Vector3)
   mouth:{s:1, z:0.3, y:0, jaw:true},
-  mode:'view', keys:null, str:1
+  mode:'view', keys:null, str:1, spheres:[], xray:false, rigid:null
 };
 const LOADER = new THREE.GLTFLoader();
 const faceMat = new THREE.MeshStandardMaterial({color:0xc2ccd0, roughness:0.62, side:THREE.DoubleSide, morphTargets:true, morphNormals:false});
+// x-ray: see-through skin with bright edges; eyeballs and teeth inside stay solid
+const xrayMat = new THREE.MeshStandardMaterial({color:0x4df3ff, transparent:true, depthWrite:false, side:THREE.DoubleSide, morphTargets:true});
+xrayMat.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <dithering_fragment>',
+  '#include <dithering_fragment>\n  float fr = 1.0 - abs(dot(normalize(vNormal), normalize(vViewPosition)));\n  gl_FragColor = vec4(mix(vec3(0.04, 0.30, 0.40), vec3(0.6, 1.0, 1.0), fr*fr), 0.05 + 0.55*fr*fr);'); };
 let faceMesh = null, eyeObjs = {L:null, R:null}, mouthObj = null;
 const markers = new THREE.Group(); scene.add(markers);
 
@@ -179,7 +193,10 @@ $('fBase').addEventListener('change', async e => {
     let n = 0; for (const p of parts) n += p.geo.attributes.position.array.length;
     const P = new Float32Array(n), N = new Float32Array(n); let o = 0;
     for (const p of parts){ P.set(p.geo.attributes.position.array, o); N.set(p.geo.attributes.normal.array, o); o += p.geo.attributes.position.array.length; }
-    S.base = {P0:P, N0:N, name:f.name, extras:(gltf.asset && gltf.asset.extras) || {}};
+    let t0 = 0; const ranges = parts.map(p => { const nT = p.geo.attributes.position.count/3, r = {name:p.name, t0, t1:t0 + nT}; t0 += nT; return r; });
+    S.base = {P0:P, N0:N, name:f.name, extras:(gltf.asset && gltf.asset.extras) || {}, parts:ranges};
+    S.eyes = {L:null, R:null}; S.spheres = findSpheres();
+    $('eyeFind').innerHTML = S.spheres.length ? 'In dit model: <b>' + S.spheres.length + '</b> bol(len) gevonden. Klik "Oogbollen in het model zoeken" om de ogen erop te zetten.' : 'Geen losse oogbollen in dit model gevonden: zet de ogen met de hand.';
     S.yaw = /girl_bust/i.test(f.name) ? 0.139 : 0;
     $('outName').value = f.name.replace(/\.(glb|gltf)$/i, '') + '_lumen.glb';
     S.keys = null; rebuildFace(); frameAll(); viewFront(); updInfo();
@@ -220,9 +237,13 @@ function rebuildFace(){
   if (!S.base) return;
   const P0 = S.base.P0, N0 = S.base.N0, T = P0.length/9;
   const cuts = ['L','R'].map(k => S.eyes[k]).filter(e => e && e.cut).map(eyeEllipse);
-  const keep = [];
+  const hide = new Uint8Array(T), rigid = new Uint8Array(T);
+  for (const k of ['L','R']){ const e = S.eyes[k], sp = e && e.orig != null && S.spheres[e.orig]; if (sp) for (const t of sp.tris) (e.keep ? rigid : hide)[t] = 1; }
+  const keep = [], keepRigid = [];
   const v = new THREE.Vector3();
   for (let t = 0; t < T; t++){
+    if (hide[t]) continue;
+    if (rigid[t]){ keep.push(t); keepRigid.push(t); continue; }
     let drop = false;
     if (cuts.length){
       v.set((P0[t*9]+P0[t*9+3]+P0[t*9+6])/3, (P0[t*9+1]+P0[t*9+4]+P0[t*9+7])/3, (P0[t*9+2]+P0[t*9+5]+P0[t*9+8])/3);
@@ -232,12 +253,13 @@ function rebuildFace(){
     if (!drop) keep.push(t);
   }
   keepIdx = keep;
+  const rs = new Set(keepRigid); S.rigid = new Uint8Array(keep.length); keep.forEach((t, i) => { if (rs.has(t)) S.rigid[i] = 1; });
   const P = new Float32Array(keep.length*9), N = new Float32Array(keep.length*9);
   keep.forEach((t, i) => { P.set(P0.subarray(t*9, t*9+9), i*9); N.set(N0.subarray(t*9, t*9+9), i*9); });
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(P, 3)); g.setAttribute('normal', new THREE.BufferAttribute(N, 3));
   if (faceMesh){ scene.remove(faceMesh); faceMesh.geometry.dispose(); }
-  faceMesh = new THREE.Mesh(g, faceMat); faceMesh.morphTargetInfluences = []; scene.add(faceMesh);
+  faceMesh = new THREE.Mesh(g, S.xray ? xrayMat : faceMat); faceMesh.renderOrder = 1; faceMesh.morphTargetInfluences = []; scene.add(faceMesh);
   S.keys = null; $('keys').textContent = ''; $('testRow').hidden = true; $('kStr').hidden = $('strLbl').hidden = true;
 }
 function frameAll(){
@@ -253,7 +275,9 @@ function viewFront(){
   ctl.target.copy(tgt); cam.position.copy(tgt).addScaledVector(fwd(), dist); cam.up.set(0,1,0); ctl.update();
 }
 $('bFront').onclick = viewFront;
-$('bHide').onclick = () => { markers.visible = !markers.visible; $('bHide').textContent = markers.visible ? 'Punten verbergen' : 'Punten tonen'; };
+$('bHide').onclick = () => { markers.visible = !markers.visible; $('bHide').textContent = markers.visible ? 'Lijnen verbergen' : 'Lijnen tonen'; };
+$('bXray').onclick = () => { S.xray = !S.xray; $('bXray').classList.toggle('on', S.xray); if (faceMesh) faceMesh.material = S.xray ? xrayMat : faceMat; drawMarkers();
+  setHint(S.xray ? 'Röntgen: je kijkt door de huid heen. Oogbollen en tanden blijven zichtbaar; groene ringen zijn de bollen die in het model gevonden zijn.' : HINTS[S.mode]); };
 $('bSetFront').onclick = () => {
   const d = cam.position.clone().sub(ctl.target); d.y = 0; d.normalize();
   S.yaw = Math.atan2(-d.x, d.z);      // the face looks towards the camera: (-sin yaw, 0, cos yaw) = d
@@ -278,18 +302,56 @@ const dotTex = (() => { const c = document.createElement('canvas'); c.width = c.
 function dot(p, col, size){ const s = new THREE.Sprite(new THREE.SpriteMaterial({map:dotTex, color:col, depthTest:false, sizeAttenuation:false})); s.scale.setScalar(size || 0.018); s.position.copy(p); s.renderOrder = 10; return s; }
 function line(pts, col, loop){ const g = new THREE.BufferGeometry().setFromPoints(pts); const l = new (loop ? THREE.LineLoop : THREE.Line)(g, new THREE.LineBasicMaterial({color:col, depthTest:false})); l.renderOrder = 9; return l; }
 function ellipsePts(e){ const el = eyeEllipse(e), out = []; for (let i = 0; i < 48; i++){ const a = i/48*Math.PI*2; out.push(fromF(new THREE.Vector3(el.c.x + Math.cos(a)*el.rx, el.c.y + Math.sin(a)*el.ry, el.c.z + 0.002*(S.unit||1)))); } return out; }
+/* the clicked points are handles of a smooth (centripetal Catmull-Rom) curve */
+const SEG = 16;
+function curveS(ctrl, closed){
+  const n = ctrl.length;
+  if (n < 2 || (closed && n < 3)) return {pts:ctrl.map(p => p.clone()), seg:ctrl.map((_, i) => i)};
+  const segs = closed ? n : n-1, pts = [], seg = [];
+  const c = n >= 3 ? new THREE.CatmullRomCurve3(ctrl, closed, 'centripetal') : new THREE.LineCurve3(ctrl[0], ctrl[1]);
+  for (let s = 0; s <= segs*SEG; s++){ pts.push(c.getPoint(s/(segs*SEG))); seg.push(Math.min(segs-1, Math.floor(s/SEG))); }
+  return {pts, seg};
+}
+function fat(pts, col, w, op){
+  if (!THREE.Line2) return line(pts, col);
+  const g = new THREE.LineGeometry(), a = []; pts.forEach(p => a.push(p.x, p.y, p.z)); g.setPositions(a);
+  const m = new THREE.LineMaterial({color:col, linewidth:w || 3, depthTest:false, transparent:true, opacity:op || 1});
+  m.resolution.set(cv.clientWidth, cv.clientHeight);
+  const l = new THREE.Line2(g, m); l.computeLineDistances(); l.renderOrder = 9; return l;
+}
+const lastCurve = {lip:null, seam:null};
+function ringPts(c, r){ const f = toF(c), out = []; for (let i = 0; i <= 48; i++){ const a = i/48*Math.PI*2; out.push(fromF(new THREE.Vector3(f.x + Math.cos(a)*r, f.y + Math.sin(a)*r, f.z))); } return out; }
 function drawMarkers(){
   markers.clear();
-  if (S.lip.length){ S.lip.forEach(p => markers.add(dot(p, 0xff5c8a))); if (S.lip.length > 1) markers.add(line(S.lip, 0xff5c8a, true)); }
-  if (S.seam.length){ S.seam.forEach((p, i) => markers.add(dot(p, 0xffd84a, (i === 0 || i === S.seam.length-1) ? 0.026 : 0.016))); if (S.seam.length > 1) markers.add(line(S.seam, 0xffd84a)); }
-  for (const k of ['L','R']){ const e = S.eyes[k]; if (!e) continue; markers.add(dot(e.c, 0x7dffb0, 0.022)); markers.add(line(ellipsePts(e), 0x7dffb0, true)); }
+  const m = S.mode;
+  lastCurve.lip = S.lip.length >= 2 ? curveS(S.lip, true) : null;
+  lastCurve.seam = S.seam.length >= 2 ? curveS(S.seam, false) : null;
+  if (lastCurve.lip) markers.add(fat(lastCurve.lip.pts, 0xff5c8a, m === 'lip' ? 3.5 : 2.5));
+  if (lastCurve.seam) markers.add(fat(lastCurve.seam.pts, 0xffd84a, m === 'seam' ? 3.5 : 2.5));
+  if (m === 'lip' || S.lip.length < 2) S.lip.forEach(p => markers.add(dot(p, 0xff5c8a, 0.014)));
+  if (m === 'seam' || S.seam.length < 2) S.seam.forEach((p, i) => markers.add(dot(p, 0xffd84a, (i === 0 || i === S.seam.length-1) ? 0.022 : 0.014)));
+  const eyeMode = m === 'eyeL' || m === 'eyeR';
+  if (S.xray || eyeMode) S.spheres.forEach((sp, i) => { const used = ['L','R'].some(k => S.eyes[k] && S.eyes[k].orig === i); markers.add(fat(ringPts(sp.c, sp.r), used ? 0x7dffb0 : 0x2e8a62, used ? 2 : 1.5, used ? 1 : 0.8)); });
+  for (const k of ['L','R']){ const e = S.eyes[k]; if (!e) continue; if (eyeMode) markers.add(dot(e.c, 0x7dffb0, 0.02)); markers.add(fat(ellipsePts(e).concat([ellipsePts(e)[0]]), 0x7dffb0, 2)); }
+}
+function nearestOnCurve(c, ev){
+  if (!c) return -1; const r = cv.getBoundingClientRect(); let best = -1, bd = 9;
+  c.pts.forEach((p, i) => { const s = screenOf(p), d = Math.hypot(s.x-(ev.clientX-r.left), s.y-(ev.clientY-r.top)); if (d < bd){ bd = d; best = i; } });
+  return best;
 }
 let drag = null, downAt = null;
 cv.addEventListener('pointerdown', ev => {
   if (ev.button !== 0 || !faceMesh) return;
   downAt = {x:ev.clientX, y:ev.clientY};
   const list = S.mode === 'lip' ? S.lip : S.mode === 'seam' ? S.seam : null;
-  if (list){ const i = nearest(list, ev); if (i >= 0){ drag = {list, i}; ctl.enabled = false; } }
+  if (list){
+    const i = nearest(list, ev);
+    if (i >= 0){ drag = {list, i}; ctl.enabled = false; }
+    else {   // grab the line itself: a new handle appears there
+      const c = lastCurve[S.mode], s = nearestOnCurve(c, ev);
+      if (s >= 0){ const at = c.seg[s] + 1, p = pick(ev) || c.pts[s].clone(); list.splice(at, 0, p); drag = {list, i:at}; ctl.enabled = false; S.keys = null; drawMarkers(); }
+    }
+  }
   else if ((S.mode === 'eyeL' || S.mode === 'eyeR') && S.eyes[S.mode.slice(3)]){ const e = S.eyes[S.mode.slice(3)]; if (nearest([e.c], ev) === 0){ drag = {eye:e}; ctl.enabled = false; } }
 });
 cv.addEventListener('pointermove', ev => {
@@ -297,17 +359,24 @@ cv.addEventListener('pointermove', ev => {
   if (drag.eye) drag.eye.c.copy(p); else drag.list[drag.i].copy(p);
   drawMarkers(); if (drag.eye) rebuildParts();
 });
+cv.addEventListener('dblclick', ev => {
+  const list = S.mode === 'lip' ? S.lip : S.mode === 'seam' ? S.seam : null; if (!list) return;
+  const i = nearest(list, ev); if (i < 0) return; list.splice(i, 1); S.keys = null; drawMarkers(); updInfo();
+});
 addEventListener('pointerup', ev => {
   const wasDrag = drag; drag = null; ctl.enabled = true;
-  if (wasDrag){ if (wasDrag.eye){ rebuildFace(); rebuildParts(); } updInfo(); return; }
+  if (wasDrag){ if (wasDrag.eye){ const e = wasDrag.eye, sp = e.orig != null && S.spheres[e.orig];
+      if (sp && e.c.distanceTo(sp.c) > sp.r*1.6){ e.orig = null; e.keep = false; } rebuildFace(); rebuildParts(); showEye(curEye); drawMarkers(); } S.keys = null; updInfo(); return; }
   if (!downAt || Math.hypot(ev.clientX-downAt.x, ev.clientY-downAt.y) > 5 || ev.target !== cv) return;
   const p = pick(ev); if (!p) return;
   if (S.mode === 'lip') S.lip.push(p);
   else if (S.mode === 'seam') S.seam.push(p);
   else if (S.mode === 'eyeL' || S.mode === 'eyeR'){
     const k = S.mode.slice(3), ed = S.eyes.L || S.eyes.R;
-    const d0 = (ed && ed.d) || (S.unit || 2)*0.06;
-    S.eyes[k] = {c:p, d:d0, z:0.35, rx:(ed && ed.rx) || 1.15, ry:(ed && ed.ry) || 0.75, cut:(ed ? ed.cut : true)};
+    const si = sphereNear(p, 1.6);
+    if (si >= 0) eyeOnSphere(k, si);
+    else { const d0 = (ed && ed.d) || (S.unit || 2)*0.06;
+      S.eyes[k] = {c:p, d:d0, z:0.35, rx:(ed && ed.rx) || 1.15, ry:(ed && ed.ry) || 0.75, cut:(ed && ed.orig == null ? ed.cut : true), orig:null, keep:false}; }
     showEye(k); rebuildFace(); rebuildParts();
   }
   S.keys = null; drawMarkers(); updInfo();
@@ -316,10 +385,10 @@ addEventListener('pointerup', ev => {
 /* ---------------- modes and controls ---------------- */
 const HINTS = {
   view:'Draai, verschuif en zoom met de muis.',
-  lip:'Buitenrand: klik rondom de lippen (bovenlip heen, onderlip terug). Sleep een punt om het te verplaatsen.',
-  seam:'Lipnaad: klik van mondhoek naar mondhoek over de lijn tussen de lippen. Eerste en laatste punt = mondhoeken.',
-  eyeL:'Klik midden op het linker oog (zoals je het ziet). Stel daarna grootte en opening in.',
-  eyeR:'Klik midden op het rechter oog (zoals je het ziet). Stel daarna grootte en opening in.'
+  lip:'Buitenrand: klik rondom de lippen (bovenlip heen, onderlip terug). Sleep een handvat of de lijn zelf om bij te stellen; dubbelklik een handvat om het weg te halen.',
+  seam:'Lipnaad: klik van mondhoek naar mondhoek over de lijn tussen de lippen. Begin en eind zijn de mondhoeken. Sleep de lijn of een handvat om bij te stellen.',
+  eyeL:'Klik midden op het linker oog (zoals je het ziet). Zit er een oogbol in het model, dan klikt het oog daarop vast.',
+  eyeR:'Klik midden op het rechter oog (zoals je het ziet). Zit er een oogbol in het model, dan klikt het oog daarop vast.'
 };
 function setHint(t){ hint.textContent = t; }
 document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => {
@@ -327,6 +396,7 @@ document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click'
   document.querySelectorAll('[data-mode]').forEach(x => x.classList.toggle('on', x.dataset.mode === S.mode));
   setHint(HINTS[S.mode]);
   if (S.mode === 'eyeL' || S.mode === 'eyeR') showEye(S.mode.slice(3)); else $('eyeCtl').hidden = true;
+  drawMarkers();
 }));
 $('bUndo').onclick = () => { if (S.mode === 'lip') S.lip.pop(); else if (S.mode === 'seam') S.seam.pop(); S.keys = null; drawMarkers(); updInfo(); };
 $('bClearMode').onclick = () => { if (S.mode === 'lip') S.lip = []; else if (S.mode === 'seam') S.seam = []; else if (S.mode === 'eyeL' || S.mode === 'eyeR'){ S.eyes[S.mode.slice(3)] = null; rebuildFace(); rebuildParts(); } S.keys = null; drawMarkers(); updInfo(); };
@@ -335,7 +405,93 @@ function showEye(k){
   curEye = k; const e = S.eyes[k]; $('eyeCtl').hidden = !e; if (!e) return;
   const u = S.unit || 2;
   $('eD').value = e.d/(u*0.06); $('eZ').value = e.z; $('eRX').value = e.rx; $('eRY').value = e.ry; $('eCut').checked = e.cut; eyeOut();
+  $('eKeepL').hidden = e.orig == null; $('eKeep').value = e.keep ? '1' : '0';
 }
+$('eKeep').addEventListener('change', () => { const e = S.eyes[curEye]; if (!e) return; e.keep = $('eKeep').value === '1'; S.keys = null; rebuildFace(); rebuildParts(); drawMarkers(); });
+
+/* ---------------- eyeballs that are already in the head model ---------------- */
+function findSpheres(){
+  const B = S.base, P = B.P0, T = P.length/9;
+  const mn = [1e9,1e9,1e9], mx = [-1e9,-1e9,-1e9];
+  for (let i = 0; i < P.length; i += 3) for (let j = 0; j < 3; j++){ if (P[i+j] < mn[j]) mn[j] = P[i+j]; if (P[i+j] > mx[j]) mx[j] = P[i+j]; }
+  const size = Math.hypot(mx[0]-mn[0], mx[1]-mn[1], mx[2]-mn[2]), eps = size*2e-5;
+  // connected pieces: triangles that share a corner
+  const par = new Int32Array(T); for (let t = 0; t < T; t++) par[t] = t;
+  const find = a => { while (par[a] !== a){ par[a] = par[par[a]]; a = par[a]; } return a; };
+  for (const pr of (B.parts || [{t0:0, t1:T}])){
+    const map = new Map();
+    for (let t = pr.t0; t < pr.t1; t++) for (let j = 0; j < 3; j++){
+      const o = t*9 + j*3, key = Math.round(P[o]/eps) + ',' + Math.round(P[o+1]/eps) + ',' + Math.round(P[o+2]/eps);
+      const u = map.get(key); if (u === undefined) map.set(key, t); else { const a = find(u), b = find(t); if (a !== b) par[a] = b; }
+    }
+  }
+  const groups = new Map(); for (let t = 0; t < T; t++){ const r = find(t); let g = groups.get(r); if (!g) groups.set(r, g = []); g.push(t); }
+  const found = [], rest = [];
+  for (const tris of groups.values()){
+    if (tris.length > T*0.4) continue;            // the head itself
+    if (tris.length < 12){ rest.push(tris); continue; }
+    // least-squares sphere: |p|^2 + D x + E y + F z + G = 0 (around the mean, for precision)
+    let cx = 0, cy = 0, cz = 0, nV = tris.length*3;
+    for (const t of tris) for (let j = 0; j < 3; j++){ const o = t*9 + j*3; cx += P[o]; cy += P[o+1]; cz += P[o+2]; }
+    cx /= nV; cy /= nV; cz /= nV;
+    const A = Array.from({length:4}, () => new Float64Array(5));
+    const bmn = [1e9,1e9,1e9], bmx = [-1e9,-1e9,-1e9];
+    for (const t of tris) for (let j = 0; j < 3; j++){ const o = t*9 + j*3, x = P[o]-cx, y = P[o+1]-cy, z = P[o+2]-cz, row = [x, y, z, 1], b = -(x*x + y*y + z*z);
+      for (let a = 0; a < 4; a++){ for (let c = 0; c < 4; c++) A[a][c] += row[a]*row[c]; A[a][4] += row[a]*b; }
+      bmn[0] = Math.min(bmn[0], x); bmn[1] = Math.min(bmn[1], y); bmn[2] = Math.min(bmn[2], z); bmx[0] = Math.max(bmx[0], x); bmx[1] = Math.max(bmx[1], y); bmx[2] = Math.max(bmx[2], z); }
+    const sol = solve4(A); if (!sol){ rest.push(tris); continue; }
+    const ox = -sol[0]/2, oy = -sol[1]/2, oz = -sol[2]/2, r2 = ox*ox + oy*oy + oz*oz - sol[3];
+    if (!(r2 > 0)){ rest.push(tris); continue; }
+    const r = Math.sqrt(r2); let e2 = 0;
+    for (const t of tris) for (let j = 0; j < 3; j++){ const o = t*9 + j*3; const d = Math.hypot(P[o]-cx-ox, P[o+1]-cy-oy, P[o+2]-cz-oz) - r; e2 += d*d; }
+    const rel = Math.sqrt(e2/nV)/r, ext = Math.max(bmx[0]-bmn[0], bmx[1]-bmn[1], bmx[2]-bmn[2]);
+    if (rel < 0.05 && r > size*0.004 && r < size*0.1 && ext > r*0.9) found.push({c:new THREE.Vector3(cx+ox, cy+oy, cz+oz), r, tris});
+    else rest.push(tris);
+  }
+  // spheres inside each other (sclera, iris layer) become one eyeball
+  found.sort((a, b) => b.r - a.r);
+  const out = [];
+  for (const s of found){ const big = out.find(o => o.c.distanceTo(s.c) < o.r*0.3 && s.r < o.r*1.05); if (big) big.tris = big.tris.concat(s.tris); else out.push(s); }
+  // loose bits inside an eyeball (iris disc, pupil, cornea) belong to it
+  for (const tris of rest){ for (const s of out){ let inside = true;
+    for (const t of tris){ for (let j = 0; j < 3 && inside; j++){ const o = t*9 + j*3; if (Math.hypot(P[o]-s.c.x, P[o+1]-s.c.y, P[o+2]-s.c.z) > s.r*1.12) inside = false; } if (!inside) break; }
+    if (inside){ s.tris = s.tris.concat(tris); break; } } }
+  out.forEach(s => s.tris = Int32Array.from(s.tris));
+  return out;
+}
+function solve4(A){
+  for (let i = 0; i < 4; i++){ let p = i; for (let r = i+1; r < 4; r++) if (Math.abs(A[r][i]) > Math.abs(A[p][i])) p = r;
+    if (Math.abs(A[p][i]) < 1e-18) return null; [A[i], A[p]] = [A[p], A[i]];
+    for (let r = 0; r < 4; r++){ if (r === i) continue; const f = A[r][i]/A[i][i]; for (let c = i; c < 5; c++) A[r][c] -= f*A[i][c]; } }
+  return [0,1,2,3].map(i => A[i][4]/A[i][i]);
+}
+function sphereNear(p, fac){ let best = -1, bd = 1e9; S.spheres.forEach((s, i) => { const d = p.distanceTo(s.c); if (d < s.r*fac && d < bd){ bd = d; best = i; } }); return best; }
+function hasDonorEye(k){ return !!(S.donor && partsWith('eye' + k).length); }
+function eyeOnSphere(k, i){
+  const s = S.spheres[i], old = S.eyes[k] || S.eyes[k === 'L' ? 'R' : 'L'];
+  // marker on the front of the ball; with z = 100 % the eyeball centre is exactly the ball's centre
+  S.eyes[k] = {c:s.c.clone().addScaledVector(fwd(), s.r), d:2*s.r, z:1, rx:(old && old.orig != null ? old.rx : 1.0), ry:(old && old.orig != null ? old.ry : 0.62), cut:false, orig:i, keep:!hasDonorEye(k)};
+}
+function matchEyes(){
+  const sp = S.spheres;
+  if (!sp.length){ $('eyeFind').innerHTML = '<span class="warn">Geen oogbollen in dit model gevonden.</span> Zet de ogen met de hand.'; return; }
+  const forMarker = k => S.eyes[k] ? sphereNear(S.eyes[k].c, 3) : -1;
+  let iL = forMarker('L'), iR = forMarker('R');
+  if (iL < 0 || iR < 0){
+    const F = sp.map(s => toF(s.c)), zMax = Math.max(...F.map(f => f.z)); let best = 1e9, pr = null;
+    for (let i = 0; i < sp.length; i++) for (let j = i+1; j < sp.length; j++){
+      const r = (sp[i].r + sp[j].r)/2, dx = Math.abs(F[i].x - F[j].x); if (dx < 2.2*r || dx > 12*r) continue;
+      const sc = Math.abs(F[i].y - F[j].y)/r + 2*Math.abs(sp[i].r - sp[j].r)/r + Math.abs(F[i].z - F[j].z)/r + (zMax - (F[i].z + F[j].z)/2)/r*0.3;
+      if (sc < best){ best = sc; pr = F[i].x < F[j].x ? [i, j] : [j, i]; } }
+    if (pr){ if (iL < 0) iL = pr[0]; if (iR < 0) iR = pr[1]; }
+    else if (sp.length === 1){ const f = toF(sp[0].c), mc = mouthCentre(); if (mc && f.x > toF(mc).x){ if (iR < 0) iR = 0; } else if (iL < 0) iL = 0; }
+  }
+  let n = 0; for (const [k, i] of [['L', iL], ['R', iR]]) if (i >= 0){ eyeOnSphere(k, i); n++; }
+  S.keys = null; rebuildFace(); rebuildParts(); drawMarkers(); updInfo(); viewFront();
+  if (S.mode === 'eyeL' || S.mode === 'eyeR') showEye(S.mode.slice(3));
+  $('eyeFind').innerHTML = n ? '<span class="ok">' + (n > 1 ? n + ' ogen' : '1 oog') + ' op de bollen uit het model gezet.</span> Kies bij een oog of je die bol houdt of vervangt; stel de oogopening in.' : '<span class="warn">Geen passend paar oogbollen gevonden.</span>';
+}
+$('bFindEyes').onclick = () => { if (S.base) matchEyes(); };
 function eyeOut(){ const e = S.eyes[curEye]; if (!e) return; $('oD').textContent = (e.d).toFixed(3); $('oZ').textContent = Math.round(e.z*100) + '%'; $('oRX').textContent = Math.round(e.rx*100) + '%'; $('oRY').textContent = Math.round(e.ry*100) + '%'; }
 for (const [id, f] of [['eD', (e, v) => e.d = v*(S.unit||2)*0.06], ['eZ', (e, v) => e.z = v], ['eRX', (e, v) => e.rx = v], ['eRY', (e, v) => e.ry = v]])
   $(id).addEventListener('input', () => { const e = S.eyes[curEye]; if (!e) return; f(e, +$(id).value); eyeOut(); drawMarkers(); rebuildParts(); S.keys = null; });
@@ -352,7 +508,9 @@ $('bMirror').onclick = () => {
   // snap onto the surface: cast along the face direction
   const from = fromF(new THREE.Vector3(g.x, g.y, g.z + (S.unit||2))), dir = fwd().negate();
   ray.set(from, dir); const h = faceMesh && ray.intersectObject(faceMesh, false)[0];
-  S.eyes[o] = {...e, c: h ? h.point.clone() : fromF(g)};
+  const c = h ? h.point.clone() : fromF(g), si = sphereNear(c, 2.5);
+  if (si >= 0 && si !== e.orig){ eyeOnSphere(o, si); Object.assign(S.eyes[o], {rx:e.rx, ry:e.ry}); }
+  else S.eyes[o] = {...e, c, orig:null, keep:false};
   drawMarkers(); rebuildFace(); rebuildParts(); S.keys = null; updInfo();
 };
 for (const [id, k, fmt] of [['mS','s',v=>Math.round(v*100)+'%'],['mZ','z',v=>Math.round(v*100)+'%'],['mY','y',v=>Math.round(v*100)+'%']])
@@ -360,13 +518,14 @@ for (const [id, k, fmt] of [['mS','s',v=>Math.round(v*100)+'%'],['mZ','z',v=>Mat
 $('mJaw').addEventListener('change', () => { S.mouth.jaw = $('mJaw').checked; S.keys = null; });
 
 /* ---------------- mouth landmarks ---------------- */
+function lipsReady(){ return S.lip.length >= 4 && S.seam.length >= 2; }
 function mouthCentre(){ if (S.seam.length >= 2) return S.seam[0].clone().add(S.seam[S.seam.length-1]).multiplyScalar(0.5); if (S.lip.length >= 3){ const c = new THREE.Vector3(); S.lip.forEach(p => c.add(p)); return c.multiplyScalar(1/S.lip.length); } return null; }
 function updInfo(){
-  $('lipInfo').innerHTML = `Buitenrand: <b>${S.lip.length}</b> punten · lipnaad: <b>${S.seam.length}</b> punten` + (S.lip.length && S.lip.length < 6 ? ' <span class="warn">(minstens 6 voor de buitenrand)</span>' : '') + (S.seam.length && S.seam.length < 3 ? ' <span class="warn">(minstens 3 voor de lipnaad)</span>' : '');
+  $('lipInfo').innerHTML = `Buitenrand: <b>${S.lip.length}</b> handvatten · lipnaad: <b>${S.seam.length}</b> handvatten` + (S.lip.length && S.lip.length < 4 ? ' <span class="warn">(minstens 4 voor de buitenrand)</span>' : '') + (S.seam.length === 1 ? ' <span class="warn">(minstens 2: beide mondhoeken)</span>' : '');
   const hasMouth = S.donor && Object.values(S.donor.roles).includes('mond');
   $('mouthCtl').hidden = !hasMouth; $('mouthInfo').hidden = hasMouth;
-  const ready = S.lip.length >= 6 && S.seam.length >= 3;
-  $('makeInfo').innerHTML = ready ? (S.eyes.L && S.eyes.R ? '<span class="ok">Klaar om vormen te maken.</span>' : 'Lippen klaar. Zonder ogen worden er geen knipper-vormen gemaakt.') : 'Eerst de buitenrand van de lippen (6+ punten) en de lipnaad (3+ punten).';
+  const ready = lipsReady();
+  $('makeInfo').innerHTML = ready ? (S.eyes.L && S.eyes.R ? '<span class="ok">Klaar om vormen te maken.</span>' : 'Lippen klaar. Zonder ogen worden er geen knipper-vormen gemaakt.') : 'Eerst de buitenrand van de lippen (4+ handvatten) en de lipnaad (mondhoeken, liefst 3+ handvatten).';
 }
 
 /* ---------------- eyeballs and mouth interior from the parts file ---------------- */
@@ -385,7 +544,7 @@ function rebuildParts(){
   partsGroup.clear(); eyeObjs = {L:null, R:null}; mouthObj = null;
   // eyeballs: from the parts file, or a simple sphere with an iris
   for (const k of ['L','R']){
-    const e = S.eyes[k]; if (!e) continue;
+    const e = S.eyes[k]; if (!e || (e.keep && e.orig != null)) continue;   // the model's own eyeball stays
     let g = null;
     if (S.donor){ const idx = partsWith('eye' + k); if (idx.length){ idx.forEach(i => partGeo(i).userData.color = S.donor.parts[i].color); g = centred(idx.map(partGeo)); } }
     if (!g){ const sg = new THREE.SphereGeometry(0.5, 32, 20).toNonIndexed(); const C = new Float32Array(sg.attributes.position.count*3);
@@ -430,36 +589,51 @@ const gs = (d2, r) => Math.exp(-d2/(r*r));
 function inPoly(x, y, poly){ let c = false; for (let i = 0, j = poly.length-1; i < poly.length; j = i++){ const a = poly[i], b = poly[j]; if ((a.y > y) !== (b.y > y) && x < (b.x-a.x)*(y-a.y)/(b.y-a.y) + a.x) c = !c; } return c; }
 function segDist(x, y, poly, closed){ let best = 1e9; const n = poly.length; for (let i = 0; i < (closed ? n : n-1); i++){ const a = poly[i], b = poly[(i+1)%n]; const dx = b.x-a.x, dy = b.y-a.y, L = dx*dx+dy*dy || 1e-12; const t = Math.max(0, Math.min(1, ((x-a.x)*dx + (y-a.y)*dy)/L)); best = Math.min(best, Math.hypot(x-(a.x+t*dx), y-(a.y+t*dy))); } return best; }
 function makeKeys(){
-  if (!(S.lip.length >= 6 && S.seam.length >= 3)){ updInfo(); return; }
+  if (!lipsReady()){ updInfo(); return; }
   const g = faceMesh.geometry, P = g.attributes.position.array, n = P.length/3;
   const F = new Float32Array(n*3); const v = new THREE.Vector3();
   for (let i = 0; i < n; i++){ v.set(P[i*3], P[i*3+1], P[i*3+2]); const f = toF(v); F[i*3] = f.x; F[i*3+1] = f.y; F[i*3+2] = f.z; }
-  const lip = S.lip.map(toF), seam = S.seam.map(toF).sort((a, b) => a.x - b.x);
-  const cL = seam[0], cR = seam[seam.length-1];
+  // the smooth lines, in face space
+  const lip = curveS(S.lip, true).pts.map(toF);
+  let seamC = curveS(S.seam, false).pts.map(toF); if (seamC[0].x > seamC[seamC.length-1].x) seamC.reverse();
+  const seam = seamC.slice().sort((a, b) => a.x - b.x);
+  const cL = seamC[0], cR = seamC[seamC.length-1];
   const M = cL.clone().add(cR).multiplyScalar(0.5); M.z = Math.max(...seam.map(p => p.z));
   const MW = Math.abs(cR.x - cL.x)/2, k = MW/0.15;           // all distances were tuned on a mouth half-width of 0.15
   const seamY = x => { if (x <= seam[0].x) return seam[0].y; for (let i = 1; i < seam.length; i++) if (x <= seam[i].x){ const a = seam[i-1], b = seam[i], t = (x-a.x)/((b.x-a.x) || 1e-9); return a.y + t*(b.y-a.y); } return seam[seam.length-1].y; };
-  const eyes = ['L','R'].map(e => S.eyes[e]).filter(Boolean).map(e => ({c:toF(e.c), rx:e.d*0.5*e.rx, ry:e.d*0.5*e.ry, cut:e.cut}));
+  // eyes, with the eyeball (centre and radius) so the lids slide over it
+  const eyes = ['L','R'].map(e => S.eyes[e]).filter(Boolean).map(e => { const c = toF(e.c); return {c, rx:e.d*0.5*e.rx, ry:e.d*0.5*e.ry, cut:e.cut, bc:new THREE.Vector3(c.x, c.y, c.z - e.z*e.d*0.5), br:e.d*0.5}; });
   // per vertex helpers
   const x = i => F[i*3], y = i => F[i*3+1], z = i => F[i*3+2];
-  const front = new Float32Array(n), lipW = new Float32Array(n), below = new Float32Array(n), CY = new Float32Array(n);
+  // lip height: how far the outline lies from the lip line (sets how deep "inside the lips" is)
+  let lh = 0, ln = 0; for (const p of lip) if (p.x > cL.x + MW*0.2 && p.x < cR.x - MW*0.2){ lh += Math.abs(p.y - seamY(p.x)); ln++; }
+  const lipH = Math.max(0.02*k, ln ? lh/ln : 0.05*k);
+  const lb = {x0:Math.min(...lip.map(p => p.x)) - 0.2*k, x1:Math.max(...lip.map(p => p.x)) + 0.2*k, y0:Math.min(...lip.map(p => p.y)) - 0.2*k, y1:Math.max(...lip.map(p => p.y)) + 0.2*k};
+  const front = new Float32Array(n), lipW = new Float32Array(n), Lin = new Float32Array(n), below = new Float32Array(n), CY = new Float32Array(n);
   for (let t = 0; t < n/3; t++){ const cx = (F[t*9]+F[t*9+3]+F[t*9+6])/3, cy = (F[t*9+1]+F[t*9+4]+F[t*9+7])/3; const b = cy < seamY(cx) ? 1 : 0; for (let j = 0; j < 3; j++) CY[t*3+j] = b; }
   for (let i = 0; i < n; i++){
-    front[i] = z(i) > M.z - 0.30*k ? 1 : 0;
-    const inside = inPoly(x(i), y(i), lip), d = segDist(x(i), y(i), lip, true);
-    lipW[i] = front[i] * (inside ? 1 : ss(0.06*k, 0.0, d));
+    front[i] = ss(M.z - 0.42*k, M.z - 0.26*k, z(i));                    // no hard edge at the back: the skin stays whole
     below[i] = CY[i];
+    if (!front[i] || x(i) < lb.x0 || x(i) > lb.x1 || y(i) < lb.y0 || y(i) > lb.y1){ lipW[i] = 0; continue; }
+    const inside = inPoly(x(i), y(i), lip), d = segDist(x(i), y(i), lip, true);
+    Lin[i] = inside ? ss(0, 0.45*lipH, d) : 0;                           // 0 on the outline, 1 well inside the lips
+    // inside the outline the lips are extra elastic; outside the skin follows firmly and fades out
+    lipW[i] = front[i] * (inside ? 0.65 + 0.35*Lin[i] : 0.65*gs(d*d, 0.07*k));
   }
+  // the mouth opens only on the lip line, between the corners; towards each corner the opening closes
+  const tearAt = xx => { if (xx <= cL.x || xx >= cR.x) return 0; return ss(1.0, 0.7, Math.abs(xx - M.x)/MW); };
   const D = () => new Float32Array(n*3);
   function jaw(a){
     const d = D(), piv = [M.x, seamY(M.x) + 0.08*k, M.z - 0.40*k];
     for (let i = 0; i < n; i++){
       if (!front[i]) continue;
       const sy = seamY(x(i));
-      const soft = ss(sy + 0.004*k, sy - 0.007*k, y(i));
-      const inm = lipW[i] > 0 ? Math.max(lipW[i], 0) : 0;
-      let w = soft*(1-inm) + below[i]*inm;
-      w *= ss(0.55*k, 0.32*k, Math.abs(x(i)-M.x)) * ss(sy - 0.75*k, sy - 0.45*k, y(i));
+      // elastic skin: a smooth band just around the lip line height, so cheeks and corners stretch instead of tearing
+      const skin = ss(sy + 0.02*k, sy - 0.06*k, y(i));
+      // inside the lips (away from the outline and the corners) the lower lip simply goes with the jaw, the upper lip stays
+      const blend = Lin[i]*tearAt(x(i));
+      let w = skin*(1 - blend) + below[i]*blend;
+      w *= front[i] * ss(0.55*k, 0.32*k, Math.abs(x(i)-M.x)) * ss(sy - 0.75*k, sy - 0.45*k, y(i));
       if (!w) continue;
       const an = a*w, dy = y(i)-piv[1], dz = z(i)-piv[2];
       d[i*3+1] = piv[1] + dy*Math.cos(an) - dz*Math.sin(an) - y(i);
@@ -469,7 +643,7 @@ function makeKeys(){
   }
   function corners(dxo, dy, dz, r){ r = (r || 0.06)*k; const d = D();
     for (const [c, side] of [[cL, -1], [cR, 1]]) for (let i = 0; i < n; i++){ if (!front[i]) continue;
-      const w = gs((x(i)-c.x)**2 + ((y(i)-c.y)*1.3)**2 + ((z(i)-c.z)*0.6)**2, r); if (w < 1e-4) continue;
+      const w = front[i]*gs((x(i)-c.x)**2 + ((y(i)-c.y)*1.3)**2 + ((z(i)-c.z)*0.6)**2, r)*(1 + 0.35*Lin[i]); if (w < 1e-4) continue;
       d[i*3] += side*dxo*k*w; d[i*3+1] += dy*k*w; d[i*3+2] += dz*k*w; }
     return d; }
   function lipsFwd(amt){ const d = D(); for (let i = 0; i < n; i++){ const w = lipW[i]; if (!w) continue; d[i*3+2] += amt*k*w; d[i*3] += -(x(i)-M.x)*0.35*w*Math.min(1, Math.abs(amt)/0.03)*Math.sign(amt); } return d; }
@@ -480,7 +654,11 @@ function makeKeys(){
       if (Math.abs(z(i)-e.c.z) > Math.max(rx, ry)*1.6) continue;
       const kk = ss(1.55, 0.95, q) * ss(e.c.y + ry*1.7, e.c.y + ry*1.15, y(i));
       d[i*3+1] = (e.c.y + seamOff - y(i))*0.93*kk*amt;
-      d[i*3+2] = 0.006*k*kk*amt; }
+      d[i*3+2] = 0.006*k*kk*amt;
+      // the lid slides over the eyeball instead of through it
+      const px = x(i), py = y(i), pz = z(i), d0 = Math.hypot(px - e.bc.x, py - e.bc.y, pz - e.bc.z);
+      if (d0 >= e.br*0.97){ const nx = px + d[i*3], ny = py + d[i*3+1], nz = pz + d[i*3+2], dd = Math.hypot(nx - e.bc.x, ny - e.bc.y, nz - e.bc.z), rr = Math.max(e.br*0.97, Math.min(d0, e.br*1.03));
+        if (dd < rr && dd > 1e-9){ const f = rr/dd; d[i*3] = e.bc.x + (nx - e.bc.x)*f - px; d[i*3+1] = e.bc.y + (ny - e.bc.y)*f - py; d[i*3+2] = e.bc.z + (nz - e.bc.z)*f - pz; } } }
     return d; }
   function brows(e, up, innerDown){ const d = D(); if (!e) return d;
     for (let i = 0; i < n; i++){ if (!front[i]) continue;
@@ -507,6 +685,8 @@ function makeKeys(){
     wenkbrauwen_op: add(brows(EL, 0.034), brows(ER, 0.034)),
   };
   if (EL && ER){ K.knipper = add(lids(EL, 1), lids(ER, 1)); K.knipoog_links = lids(EL, 1); K.knipoog_rechts = lids(ER, 1); K.ogen_smal = add(lids(EL, 0.5), lids(ER, 0.5), cheeks(0.008)); }
+  // the model's own eyeballs (kept) never deform
+  if (S.rigid) for (let t = 0; t < n/3; t++) if (S.rigid[t]) for (const name in K) K[name].fill(0, t*9, t*9 + 9);
   // back to model space
   const c = Math.cos(S.yaw), s = Math.sin(S.yaw);
   for (const name in K){ const d = K[name]; for (let i = 0; i < n; i++){ const fx = d[i*3], fz = d[i*3+2]; d[i*3] = c*fx - s*fz; d[i*3+2] = s*fx + c*fz; } }
@@ -613,7 +793,7 @@ function writeGLB(){
 }
 function download(data, name, type){ const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], {type})); a.download = name; document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); }
 $('bExport').onclick = () => {
-  if (!faceMesh) return; if (!S.keys && S.lip.length >= 6 && S.seam.length >= 3) makeKeys();
+  if (!faceMesh) return; if (!S.keys && lipsReady()) makeKeys();
   const glb = writeGLB(); download(glb, $('outName').value || 'model_lumen.glb', 'model/gltf-binary');
   setHint('Opgeslagen: ' + ($('outName').value) + ' (' + Math.round(glb.byteLength/1024) + ' kB).');
 };
@@ -626,7 +806,7 @@ $('bLoadProjBtn').onclick = () => $('fProj').click();
 $('fProj').addEventListener('change', async e => {
   const f = e.target.files[0]; if (!f) return; const p = JSON.parse(await f.text()), V = a => new THREE.Vector3(a[0], a[1], a[2]);
   S.yaw = p.yaw || 0; S.lip = (p.lip || []).map(V); S.seam = (p.seam || []).map(V);
-  for (const k of ['L','R']) S.eyes[k] = p.eyes && p.eyes[k] ? {...p.eyes[k], c:V(p.eyes[k].c)} : null;
+  for (const k of ['L','R']){ S.eyes[k] = p.eyes && p.eyes[k] ? {...p.eyes[k], c:V(p.eyes[k].c)} : null; if (S.eyes[k] && S.eyes[k].orig != null && !S.spheres[S.eyes[k].orig]) S.eyes[k].orig = null; }
   if (p.mouth) S.mouth = p.mouth; if (p.str) S.str = p.str;
   if (p.roles && S.donor) S.donor.roles = p.roles, fillParts();
   ['mS','mZ','mY'].forEach((id, i) => $(id).value = S.mouth[['s','z','y'][i]]); $('mJaw').checked = S.mouth.jaw !== false;
@@ -637,7 +817,7 @@ $('fProj').addEventListener('change', async e => {
 let last = performance.now();
 function loop(now){ const dt = Math.min(0.05, (now - last)/1000); last = now; ctl.update(); talkTick(dt); R.render(scene, cam); requestAnimationFrame(loop); }
 requestAnimationFrame(loop);
-window.__editor = S;
+window.__editor = S; resize();
 </script>
 </body>
 </html>
