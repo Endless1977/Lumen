@@ -894,7 +894,7 @@ button.cam:focus-visible{outline:2px solid var(--laser);outline-offset:3px}
       <label for="cfgChIn" data-i18n="cfg.binnenklimaat">Binnenklimaat (woonkamer, slaapkamer, keuken; plus gemiddelde)</label><input id="cfgChIn" placeholder="climate.woonkamer, climate.slaapkamer">
       <label for="cfgChOut" data-i18n="cfg.buitentemp">Buitentemperatuur (KNMI-sensor)</label><input id="cfgChOut" placeholder="sensor.knmi_buitentemperatuur">
       <label for="cfgStations" data-i18n="cfg.radiozenders">Radiozenders (één per regel: naam | adres)</label><textarea id="cfgStations" rows="5"></textarea>
-      <label for="cfgHouse" data-i18n="cfg.huismodel">Huismodel (3D, voor het blad Huis)</label><input id="cfgHouse" placeholder="/local/lumen/house.glb">
+      <label for="cfgHouse" data-i18n="cfg.huismodel">Huismodel (3D, voor het blad Huis)</label><input id="cfgHouse" placeholder="house.glb (voorbeeld) of /local/mijn_huis.glb">
       <label for="cfgRooms" data-i18n="cfg.kamers_koppelen">Kamers koppelen (één per regel: kamer = entiteiten)</label><textarea id="cfgRooms" rows="4"></textarea>
       <label for="cfgPi" data-i18n="cfg.pi_status">Pi-status: CPU, temperatuur, geheugen, SSD (4 sensoren, leeg = zelf zoeken)</label><input id="cfgPi" placeholder="sensor.system_monitor_processor_use, …">
       <label for="cfgCctv" data-i18n="cfg.cctv_map">Opnames CCTV: map in de mediabrowser (leeg = Frigate)</label><input id="cfgCctv" placeholder="media-source://frigate">
@@ -1693,7 +1693,7 @@ const log=$('log'), form=$('form'), msg=$('msg'), send=$('send'), stop=$('stop')
 const DEF = { base: location.protocol.startsWith('http') ? location.origin : 'http://localhost:8123',
   token:'', agent:'', tts:'', voice:'', speaker:'', trim:'', chSolar:'', chBatt:'', chIn:'', chOut:'sensor.knmi_buitentemperatuur',
   stations:'NPO Radio 1 | https://icecast.omroep.nl/radio1-bb-mp3\nNPO Radio 2 | https://icecast.omroep.nl/radio2-bb-mp3\nNPO 3FM | https://icecast.omroep.nl/3fm-bb-mp3\nNPO Klassiek | https://icecast.omroep.nl/radio4-bb-mp3', stt:'', models:'girl_bust.glb', mpBase:'', lang:'nl', uiLang:'nl', entities:'', place:'',
-  house:'/local/lumen/house.glb', pi:'', cctvRoot:'', rooms:'', hide:'',
+  house:'', pi:'', cctvRoot:'', rooms:'', hide:'',
   // Instellingen-blad (Bediening > Instellingen): leeg = val terug op de
   // ingebouwde standaardwaarden (zie roomName()/camName()/alarmCamList()
   // in het Huis/CCTV-script-blok) - zo blijft deze installatie werken zonder
@@ -1759,7 +1759,7 @@ const I18N = {
     'huis.binnen':'Binnen', 'huis.lampen_aan':'Lampen aan', 'huis.beweging':'Beweging', 'huis.ruimte_in_ha':'ruimte in HA',
     'huis.nog_niet_gekoppeld':'Nog niet gekoppeld aan Home Assistant.',
     'huis.geen_3d_bibliotheek':'3D-bibliotheek niet geladen.', 'huis.model_niet_verwerkt':'Het huismodel kon niet verwerkt worden',
-    'huis.model_niet_geladen':'Kon het huismodel niet laden van {url}. Zet house.glb in config/www/lumen/ op de Pi, of pas het pad aan bij Instellingen › Huismodel.',
+    'huis.model_niet_geladen':'Kon het huismodel niet laden van {url}. Laat het veld leeg voor het voorbeeldhuis, of zet je eigen model in config/www/ en vul /local/naam.glb in bij Instellingen › Huismodel.',
     'huis.geen_apparaten':'Nog geen apparaten in deze ruimte. Hang ze in Home Assistant aan de ruimte "{ruimte}" of zet ze bij Instellingen › Kamers koppelen.',
     'algemeen.aan':'Aan',
     'hvac.uit':'Uit', 'hvac.verwarmen':'Verwarmen', 'hvac.koelen':'Koelen', 'hvac.auto':'Auto', 'hvac.drogen':'Drogen', 'hvac.ventilator':'Ventilator',
@@ -1950,7 +1950,7 @@ const I18N = {
     'huis.binnen':'Indoor', 'huis.lampen_aan':'Lights on', 'huis.beweging':'Motion', 'huis.ruimte_in_ha':'HA room',
     'huis.nog_niet_gekoppeld':'Not yet linked to Home Assistant.',
     'huis.geen_3d_bibliotheek':'3D library not loaded.', 'huis.model_niet_verwerkt':'Could not process the house model',
-    'huis.model_niet_geladen':'Could not load the house model from {url}. Put house.glb in config/www/lumen/ on the Pi, or adjust the path under Settings › House model.',
+    'huis.model_niet_geladen':'Could not load the house model from {url}. Leave the field empty for the example house, or put your own model in config/www/ and enter /local/name.glb under Settings › House model.',
     'huis.geen_apparaten':'No devices in this room yet. Assign them to the room "{ruimte}" in Home Assistant, or set it up under Settings › Link rooms.',
     'algemeen.aan':'On',
     'hvac.uit':'Off', 'hvac.verwarmen':'Heat', 'hvac.koelen':'Cool', 'hvac.auto':'Auto', 'hvac.drogen':'Dry', 'hvac.ventilator':'Fan',
@@ -2145,7 +2145,7 @@ const I18N = {
     'huis.lampen_aan':'Lampen an', 'huis.beweging':'Bewegung', 'huis.ruimte_in_ha':'Raum in HA',
     'huis.nog_niet_gekoppeld':'Noch nicht mit Home Assistant verknüpft.', 'huis.geen_3d_bibliotheek':'3D-Bibliothek nicht geladen.',
     'huis.model_niet_verwerkt':'Das Hausmodell konnte nicht verarbeitet werden',
-    'huis.model_niet_geladen':'Das Hausmodell konnte nicht von {url} geladen werden. Lege house.glb in config/www/lumen/ auf dem Pi ab, oder passe den Pfad unter Einstellungen › Hausmodell an.',
+    'huis.model_niet_geladen':'Das Hausmodell konnte nicht von {url} geladen werden. Lass das Feld leer für das Beispielhaus, oder lege dein eigenes Modell in config/www/ ab und trage /local/name.glb unter Einstellungen › Hausmodell ein.',
     'huis.geen_apparaten':'Noch keine Geräte in diesem Raum. Hänge sie in Home Assistant an den Raum "{ruimte}" oder lege sie unter Einstellungen › Räume verknüpfen fest.',
     'algemeen.aan':'An', 'hvac.uit':'Aus', 'hvac.verwarmen':'Heizen', 'hvac.koelen':'Kühlen', 'hvac.auto':'Auto', 'hvac.drogen':'Trocknen',
     'hvac.ventilator':'Ventilator', 'hvac.actie_verwarmt':'heizt', 'hvac.actie_koelt':'kühlt', 'hvac.actie_rust':'ruht', 'hvac.actie_uit':'aus',
@@ -2368,7 +2368,7 @@ const I18N = {
     'huis.binnen':'Intérieur', 'huis.lampen_aan':'Lampes allumées', 'huis.beweging':'Mouvement', 'huis.ruimte_in_ha':'pièce dans HA',
     'huis.nog_niet_gekoppeld':"Pas encore associé à Home Assistant.", 'huis.geen_3d_bibliotheek':'Bibliothèque 3D non chargée.',
     'huis.model_niet_verwerkt':"Le modèle de maison n'a pas pu être traité",
-    'huis.model_niet_geladen':"Impossible de charger le modèle de maison depuis {url}. Placez house.glb dans config/www/lumen/ sur le Pi, ou ajustez le chemin dans Paramètres › Modèle de maison.",
+    'huis.model_niet_geladen':"Impossible de charger le modèle de maison depuis {url}. Laissez le champ vide pour la maison d'exemple, ou placez votre modèle dans config/www/ et indiquez /local/nom.glb dans Paramètres › Modèle de maison.",
     'huis.geen_apparaten':"Pas encore d'appareils dans cette pièce. Associez-les dans Home Assistant à la pièce « {ruimte} » ou définissez-les dans Paramètres › Associer les pièces.",
     'algemeen.aan':'Activé', 'hvac.uit':'Éteint', 'hvac.verwarmen':'Chauffer', 'hvac.koelen':'Refroidir', 'hvac.auto':'Auto',
     'hvac.drogen':'Déshumidifier', 'hvac.ventilator':'Ventilateur', 'hvac.actie_verwarmt':'chauffe', 'hvac.actie_koelt':'refroidit',
@@ -4592,7 +4592,7 @@ function houseInit(){
   bindControls();
   $('floors').addEventListener('click', e => { const b = e.target.closest('button[data-level]'); if (b) setLevel(b.dataset.level, true); });
 }
-function houseUrl(){ return cfg().house || '/local/lumen/house.glb'; }
+function houseUrl(){ return cfg().house || 'house.glb'; }
 
 function houseBuild(gltf){
   const root = gltf.scene; H.scene.add(root); root.updateMatrixWorld(true);

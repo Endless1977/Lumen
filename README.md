@@ -13,13 +13,14 @@ screen for your house: climate, lights, energy, media and cameras.
 
 | | |
 |---|---|
-| ![Climate per room](https://raw.githubusercontent.com/Endless1977/Lumen/main/docs/screenshots/2-klimaat.png) | ![Energy flow and today's totals](https://raw.githubusercontent.com/Endless1977/Lumen/main/docs/screenshots/4-energie.png) |
-| **Bediening › Klimaat**: every thermostat and air conditioner | **Bediening › Energie**: live flow between solar, grid, battery, house, gas and water |
-| ![Energy history per month](https://raw.githubusercontent.com/Endless1977/Lumen/main/docs/screenshots/5-historie.png) | ![CCTV with the garden guard](https://raw.githubusercontent.com/Endless1977/Lumen/main/docs/screenshots/6-cctv.png) |
-| **History**: tap any chart, page back per day, week, month or year | **CCTV**: all cameras live, garden guard on top |
-| ![Media](https://raw.githubusercontent.com/Endless1977/Lumen/main/docs/screenshots/7-media.png) | ![Model, calibration and look](https://raw.githubusercontent.com/Endless1977/Lumen/main/docs/screenshots/8-weergave.jpg) |
-| **Media**: radio, library and every speaker in Home Assistant | **Weergave**: choose a model, set eyes and mouth, colour and light |
-
+| ![The example house as a hologram](https://raw.githubusercontent.com/Endless1977/Lumen/main/docs/screenshots/3-huis.jpg) | ![Climate per room](https://raw.githubusercontent.com/Endless1977/Lumen/main/docs/screenshots/2-klimaat.png) |
+| **Huis**: the included example house, per floor; tap a room for its status | **Bediening › Klimaat**: every thermostat and air conditioner |
+| ![Energy flow and today's totals](https://raw.githubusercontent.com/Endless1977/Lumen/main/docs/screenshots/4-energie.png) | ![Energy history per month](https://raw.githubusercontent.com/Endless1977/Lumen/main/docs/screenshots/5-historie.png) |
+| **Bediening › Energie**: live flow between solar, grid, battery, house, gas and water | **History**: tap any chart, page back per day, week, month or year |
+| ![CCTV with the garden guard](https://raw.githubusercontent.com/Endless1977/Lumen/main/docs/screenshots/6-cctv.png) | ![Media](https://raw.githubusercontent.com/Endless1977/Lumen/main/docs/screenshots/7-media.png) |
+| **CCTV**: all cameras live, garden guard on top | **Media**: radio, library and every speaker in Home Assistant |
+| ![Model, calibration and look](https://raw.githubusercontent.com/Endless1977/Lumen/main/docs/screenshots/8-weergave.jpg) | |
+| **Weergave**: choose a model, set eyes and mouth, colour and light | |
 </details>
 
 *Screenshots use demo data.*
@@ -32,7 +33,9 @@ screen for your house: climate, lights, energy, media and cameras.
 - **Talk to your house**: uses your Home Assistant conversation agent (Ollama, OpenAI, the
   built-in one, …), text-to-speech (Piper, cloud voices) and speech-to-text (Whisper), or the
   browser's own voice and speech recognition.
-- **Huis**: your house as a 3D hologram (optional model) with live room status.
+- **Huis**: your house as a 3D hologram with live room status, per floor. An example house is
+  included, so you can see it working straight away; swap in your own model when you have one
+  (see [The 3D house](#the-3d-house)).
 - **Bediening**: climate, lights per room, switches, and an **energy** page with a live flow
   diagram (solar, grid, battery, gas, water), history per day, week, month and year, solar
   forecast, costs and savings.
@@ -104,7 +107,31 @@ models, which entities to show, radio stations, room and camera names. What you 
 integration is only the default for screens that have no setting of their own.
 
 **3D models**: `girl_bust.glb` is included. Put your own models in `/config/www/` and list them
-as `/local/your_model.glb`. The 3D house model is optional (`/local/lumen/house.glb` by default).
+as `/local/your_model.glb`.
+
+### The 3D house
+
+![The example house in the Huis tab](https://raw.githubusercontent.com/Endless1977/Lumen/main/docs/screenshots/3-huis.jpg)
+
+Lumen comes with an **example house** (`house.glb`): two floors, an attic and a garden with
+rooms, a driveway gate, solar panels, a heat pump, an EV charger and a robot mower. It is shown
+when the field **Instellingen › Huismodel** is empty. Use the floor buttons on the left, drag to
+turn, pinch or scroll to zoom and tap a room to see its status.
+
+To use **your own house**, put the `.glb` in `/config/www/` and enter `/local/my_house.glb` under
+**Instellingen › Huismodel**. Lumen reads rooms, floors and devices from the model itself
+(floorplan3d format): nodes carry `extras.fp` with
+
+| Field | Meaning |
+|---|---|
+| `kind` | `level` (a floor), `room`, `zone` (garden, driveway) or `object` (a device) |
+| `id`, `label` | identifier and the name shown on screen |
+| `type` | for objects: `light`, `climate`, `gate`, `solar`, `ev_charger`, `mower`, … |
+| `layer` | what a mesh is (`facade`, `roof`, `glass`, `furniture`, …), used to fade parts per floor |
+| `suggest` | the Home Assistant entity (`light.kitchen`) or area it belongs to |
+
+The example house uses generic names such as `light.kitchen` and `climate.living_room`; rooms
+and devices whose entity is not in your Home Assistant just show no status.
 
 ## Face editor (shape keys)
 
@@ -161,6 +188,9 @@ praten en het te bedienen (klimaat, verlichting, energie, media, camera's).
 **Installeren:** HACS › ⋮ › Aangepaste repositories › `https://github.com/Endless1977/Lumen` (type
 Integratie) › Lumen installeren › Home Assistant herstarten › Instellingen › Apparaten & diensten ›
 Integratie toevoegen › Lumen. Lumen staat daarna in de zijbalk. Een token is niet nodig.
+
+**Huis:** een voorbeeldhuis zit erbij en wordt getoond zolang Instellingen › Huismodel leeg is.
+Je eigen model zet je in `/config/www/` en vul je in als `/local/mijn_huis.glb`.
 
 **Helpers:** zet [`packages/lumen.yaml`](packages/lumen.yaml) in `/config/packages/` (zie hierboven)
 en herstart. **Blueprints** voor de deurbel, een dier bij de deur, meldingen en het terugzetten van
