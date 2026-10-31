@@ -141,9 +141,10 @@ open it in Chrome or Edge on your computer (it needs internet for three.js).
 1. Load the head model (`.glb`), and optionally a second `.glb` with eyeballs and the inside of
    a mouth (teeth, gums). Choose per part whether it is the left eye, the right eye or the mouth.
 2. Click around the **outline of the lips**, then along the **line between the lips** from corner
-   to corner.
-3. Click the middle of each **eye** and set the exact eyeball size, depth and eye opening; the old
-   eye can be cut out so the new eyeball fits.
+   to corner. Your clicks become a smooth line; drag a handle or the line itself to adjust it.
+3. Click the middle of each **eye**. Eyeballs already in the model are found and matched
+   (*Oogbollen in het model zoeken*); otherwise set the eyeball size, depth and eye opening yourself.
+   **Röntgen** (x-ray) lets you look through the skin.
 4. **Make shapes** creates 16 shape keys: `mond_a`, `mond_e`, `mond_i`, `mond_o`, `mond_u`,
    `mond_m`, `mond_f`, `knipper`, `knipoog_links`, `knipoog_rechts`, `ogen_smal`, `lach`,
    `verdriet`, `verbazing`, `boos`, `wenkbrauwen_op`. Test them with sliders, the talk test and blink.
