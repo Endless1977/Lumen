@@ -13,11 +13,17 @@ license; it keeps its own CC BY 4.0 license.
 - Changes: converted to GLB with the three.js GLTFExporter. The credit is stored in the file
   (`asset.extras`) and shown by Lumen under the model.
 
-## Libraries and fonts (loaded from a CDN, not included in this repository)
+## Libraries and fonts (bundled in `custom_components/lumen/www/vendor/`)
 
-- three.js r128 and GLTFLoader, MIT License, https://threejs.org
-- hls.js 1.5, Apache License 2.0, https://github.com/video-dev/hls.js
-- IBM Plex Sans, IBM Plex Mono and Oxanium, SIL Open Font License 1.1 (Google Fonts)
+Lumen loads no code from the internet: these files ship with the integration, each with its
+license next to it.
+
+| Files | What | License |
+|---|---|---|
+| `vendor/three.min.js`, `vendor/GLTFLoader.js` | three.js r128, https://threejs.org | MIT (`vendor/LICENSE-three.js.txt`) |
+| `vendor/hls.min.js` | hls.js 1.5.13, https://github.com/video-dev/hls.js | Apache License 2.0 (`vendor/LICENSE-hls.js.txt`) |
+| `vendor/mediapipe/` | MediaPipe Face Detection 0.4.1646425229 (Google), https://github.com/google/mediapipe | Apache License 2.0 (`vendor/mediapipe/LICENSE.txt`) |
+| `vendor/fonts/` | IBM Plex Sans, IBM Plex Mono (IBM) and Oxanium (The Oxanium Project Authors), via Fontsource | SIL Open Font License 1.1 (`vendor/fonts/LICENSE-*.txt`) |
 
 ## Services
 

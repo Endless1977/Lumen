@@ -23,8 +23,7 @@
 })();
 </script>
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&family=Oxanium:wght@500;700&display=swap">
+<link rel="stylesheet" href="vendor/fonts/fonts.css">
 <style>
 /* layout: projection stage fills the left, transmission log column on the right; stacks vertically on phones */
 :root{
@@ -878,7 +877,7 @@ button.cam:focus-visible{outline:2px solid var(--laser);outline-offset:3px}
       <label for="cfgTrim" data-i18n="cfg.trim">Begin van de stem overslaan (milliseconden, tegen geruis)</label><input id="cfgTrim" type="number" min="0" max="1000" step="10" placeholder="0">
       <label for="cfgStt" data-i18n="cfg.stt">Spraakherkenning (STT-entiteit, leeg = browser)</label><input id="cfgStt" placeholder="stt.faster_whisper">
       <label for="cfgModels" data-i18n="cfg.modellen">3D-modellen (komma-gescheiden; eigen modellen in config/www als /local/naam.glb)</label><input id="cfgModels" placeholder="girl_bust.glb, /local/mijn_model.glb">
-      <label for="cfgMp" data-i18n="cfg.gezichtsherkenning">Gezichtsherkenning-bestanden (leeg = via internet)</label><input id="cfgMp" placeholder="/local/lumen/face_detection">
+      <label for="cfgMp" data-i18n="cfg.gezichtsherkenning">Gezichtsherkenning-bestanden (leeg = meegeleverd)</label><input id="cfgMp" placeholder="vendor/mediapipe">
       <label for="cfgPlace">Woonplaats (voor lokaal nieuws, optioneel)</label><input id="cfgPlace" placeholder="Utrecht">
       <label for="cfgLang" data-i18n="cfg.taal_spraak">Taal (nl = Nederland; nl-BE = Vlaams)</label><input id="cfgLang" placeholder="nl">
       <label for="cfgUiLang" data-i18n="cfg.uilang">Schermtaal</label>
@@ -914,8 +913,8 @@ button.cam:focus-visible{outline:2px solid var(--laser);outline-offset:3px}
   </aside>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="vendor/three.min.js"></script>
+<script src="vendor/GLTFLoader.js"></script>
 <script>
 (function(){
 const $ = id => document.getElementById(id);
@@ -1735,7 +1734,7 @@ const I18N = {
     'cfg.agent':'Gespreksagent (leeg = standaard)', 'cfg.tts':'Stem (TTS-entiteit, leeg = browserstem)', 'cfg.stemvariant':'Stemvariant (optioneel)',
     'cfg.spreker':'Spreker (optioneel, bij stemmen met meerdere sprekers)', 'cfg.trim':'Begin van de stem overslaan (milliseconden, tegen geruis)',
     'cfg.stt':'Spraakherkenning (STT-entiteit, leeg = browser)', 'cfg.modellen':'3D-modellen (bestanden in config/www, komma-gescheiden)',
-    'cfg.gezichtsherkenning':'Gezichtsherkenning-bestanden (leeg = via internet)', 'cfg.taal_spraak':'Taal (nl = Nederland; nl-BE = Vlaams)',
+    'cfg.gezichtsherkenning':'Gezichtsherkenning-bestanden (leeg = meegeleverd)', 'cfg.taal_spraak':'Taal (nl = Nederland; nl-BE = Vlaams)',
     'cfg.entiteiten_paneel':'Apparaten in het paneel', 'cfg.grafiek_zon':'Grafiek zonnepanelen (entiteit, leeg = zelf zoeken)',
     'cfg.grafiek_accu':'Grafiek thuisaccu (entiteit)', 'cfg.binnenklimaat':'Binnenklimaat (woonkamer, slaapkamer, keuken; plus gemiddelde)',
     'cfg.buitentemp':'Buitentemperatuur (KNMI-sensor)', 'cfg.radiozenders':'Radiozenders (één per regel: naam | adres)',
@@ -1926,7 +1925,7 @@ const I18N = {
     'cfg.agent':'Conversation agent (empty = default)', 'cfg.tts':'Voice (TTS entity, empty = browser voice)', 'cfg.stemvariant':'Voice variant (optional)',
     'cfg.spreker':'Speaker (optional, for multi-speaker voices)', 'cfg.trim':'Skip start of voice (milliseconds, against noise)',
     'cfg.stt':'Speech recognition (STT entity, empty = browser)', 'cfg.modellen':'3D models (files in config/www, comma-separated)',
-    'cfg.gezichtsherkenning':'Face-detection files (empty = via internet)', 'cfg.taal_spraak':'Language (nl = Dutch; nl-BE = Flemish)',
+    'cfg.gezichtsherkenning':'Face-detection files (empty = bundled)', 'cfg.taal_spraak':'Language (nl = Dutch; nl-BE = Flemish)',
     'cfg.entiteiten_paneel':'Devices in the panel', 'cfg.grafiek_zon':'Solar panel chart (entity, empty = auto-detect)',
     'cfg.grafiek_accu':'Home battery chart (entity)', 'cfg.binnenklimaat':'Indoor climate (living room, bedroom, kitchen; plus average)',
     'cfg.buitentemp':'Outdoor temperature (KNMI sensor)', 'cfg.radiozenders':'Radio stations (one per line: name | address)',
@@ -2117,7 +2116,7 @@ const I18N = {
     'cfg.agent':'Gesprächsagent (leer = Standard)', 'cfg.tts':'Stimme (TTS-Entität, leer = Browserstimme)', 'cfg.stemvariant':'Stimmvariante (optional)',
     'cfg.spreker':'Sprecher (optional, bei Stimmen mit mehreren Sprechern)', 'cfg.trim':'Anfang der Stimme überspringen (Millisekunden, gegen Rauschen)',
     'cfg.stt':'Spracherkennung (STT-Entität, leer = Browser)', 'cfg.modellen':'3D-Modelle (Dateien in config/www, kommagetrennt)',
-    'cfg.gezichtsherkenning':'Gesichtserkennungs-Dateien (leer = über das Internet)', 'cfg.taal_spraak':'Sprache (nl = Niederländisch; nl-BE = Flämisch)',
+    'cfg.gezichtsherkenning':'Gesichtserkennungs-Dateien (leer = mitgeliefert)', 'cfg.taal_spraak':'Sprache (nl = Niederländisch; nl-BE = Flämisch)',
     'cfg.entiteiten_paneel':'Geräte im Panel', 'cfg.grafiek_zon':'Grafik Solarpanels (Entität, leer = selbst suchen)',
     'cfg.grafiek_accu':'Grafik Hausbatterie (Entität)', 'cfg.binnenklimaat':'Innenklima (Wohnzimmer, Schlafzimmer, Küche; plus Durchschnitt)',
     'cfg.buitentemp':'Außentemperatur (KNMI-Sensor)', 'cfg.radiozenders':'Radiosender (einer pro Zeile: Name | Adresse)',
@@ -2336,7 +2335,7 @@ const I18N = {
     'cfg.trim':'Ignorer le début de la voix (millisecondes, contre le bruit)',
     'cfg.stt':'Reconnaissance vocale (entité STT, vide = navigateur)',
     'cfg.modellen':'Modèles 3D (fichiers dans config/www, séparés par des virgules)',
-    'cfg.gezichtsherkenning':'Fichiers de reconnaissance faciale (vide = via internet)',
+    'cfg.gezichtsherkenning':'Fichiers de reconnaissance faciale (vide = fournis)',
     'cfg.taal_spraak':'Langue (nl = néerlandais ; nl-BE = flamand)', 'cfg.entiteiten_paneel':'Appareils dans le panneau',
     'cfg.grafiek_zon':'Graphique panneaux solaires (entité, vide = recherche automatique)',
     'cfg.grafiek_accu':'Graphique batterie domestique (entité)',
@@ -3902,7 +3901,7 @@ const S=window.__lumen, $=id=>document.getElementById(id);
 const tog=$('camMode'), stateEl=$('camState'), view=$('camView'), startBtn=$('startBtn');
 const readJSON=(k,d)=>{ try{ return JSON.parse(localStorage.getItem(k)||'null')||d; }catch(e){ return d; } };
 const cfg=()=>readJSON('lumen-ha',{});
-const FD_CDN='https://cdn.jsdelivr.net/npm/@mediapipe/face_detection@0.4.1646425229';
+const FD_CDN='vendor/mediapipe';   // bundled with Lumen; a folder under Instellingen overrides it
 const NEAR=0.13;                 // face width as part of the image: "standing in front of her"
 const HOLD_MS=800;               // near this long before she greets
 const AWAY_MS=15000;             // gone this long = left
@@ -3921,7 +3920,7 @@ function greeting(){
   return g+'! Wat kan ik voor je doen?';
 }
 
-function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.crossOrigin='anonymous'; s.onload=res; s.onerror=()=>rej(new Error('laden mislukt: '+src)); document.head.append(s); }); }
+function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=()=>rej(new Error('laden mislukt: '+src)); document.head.append(s); }); }
 async function loadDetector(){
   const base=(cfg().mpBase||'').replace(/\/+$/,'') || FD_CDN;
   if(!window.FaceDetection) await loadScript(base+'/face_detection.js');
@@ -3948,7 +3947,7 @@ async function start(){
   try{ if(!det) det=await loadDetector(); }
   catch(e){
     console.error(e); stop(); setState('fout');
-    note('Gezichtsherkenning kon niet laden. Heeft de tablet internet? Of zet de bestanden lokaal en vul bij Instellingen de map in.'); return;
+    note('Gezichtsherkenning kon niet laden. Laat bij Instellingen het veld Gezichtsherkenning-bestanden leeg (meegeleverde bestanden), of controleer de map die daar staat.'); return;
   }
   setState('kijkt'); loop();
 }
@@ -5508,7 +5507,7 @@ async function wsSubscribe(msg, onEvent){
 function wsUnsubscribe(id){ wsEvents.delete(id); if (WS && WS.readyState === 1) WS.send(JSON.stringify({id: ++wsId, type:'unsubscribe_events', subscription:id})); }
 function loadHls(){
   if (window.Hls) return Promise.resolve();
-  return new Promise((ok, bad) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js'; s.onload = ok; s.onerror = bad; document.head.append(s); });
+  return new Promise((ok, bad) => { const s = document.createElement('script'); s.src = 'vendor/hls.min.js'; s.onload = ok; s.onerror = bad; document.head.append(s); });
 }
 async function attach(video, url){
   detach(video);
