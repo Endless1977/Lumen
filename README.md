@@ -161,8 +161,10 @@ models you use in mind before sharing them.
   that folder is public.
 - Camera images and microphone audio stay between your browser and your Home Assistant.
   The microphone is only used while you talk to Lumen or hold the talk button.
-- External resources: three.js and hls.js (jsDelivr / cdnjs), Google Fonts, and
-  radio-browser.info when you search for radio stations.
+- No code is loaded from the internet: three.js, hls.js, MediaPipe face detection and the fonts
+  ship with the integration (`www/vendor/`, see [CREDITS.md](CREDITS.md)), so Lumen also works
+  without internet access. The only outside service is radio-browser.info, and only when you
+  search for radio stations.
 
 ## Requirements
 
