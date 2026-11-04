@@ -30,6 +30,8 @@ button.primary{background:var(--accent);color:#03181c;border-color:var(--accent)
 .parts select{flex:1;font-size:12px;background:#0f1a1e;color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:3px}
 .keys{display:grid;grid-template-columns:110px 1fr;gap:2px 8px;align-items:center;font-size:12px}
 .small{font-size:12px;color:var(--mute)}
+.pad{position:absolute;left:12px;bottom:12px;display:flex;gap:4px;align-items:center;background:rgba(6,9,11,.8);border:1px solid var(--line);border-radius:6px;padding:5px}
+.pad button{padding:5px 9px}
 .warn{color:var(--warn)}
 .ok{color:var(--eye)}
 @media (max-width:900px){.app{grid-template-columns:1fr;grid-template-rows:55vh 1fr}.side{border-left:0;border-top:1px solid var(--line)}}
@@ -37,7 +39,10 @@ button.primary{background:var(--accent);color:#03181c;border-color:var(--accent)
 </head>
 <body>
 <div class="app">
-  <div id="view"><canvas id="c"></canvas><div class="hint" id="hint">Laad eerst een model (rechts).</div></div>
+  <div id="view"><canvas id="c"></canvas><div class="hint" id="hint">Laad eerst een model (rechts).</div>
+    <div class="pad"><button id="bPan" title="Linker muisknop schuift het beeld (of houd de spatiebalk ingedrukt)">✥ Verschuiven</button>
+      <button data-pan="-1,0" title="Naar links">◀</button><button data-pan="0,1" title="Omhoog">▲</button><button data-pan="0,-1" title="Omlaag">▼</button><button data-pan="1,0" title="Naar rechts">▶</button>
+      <button data-zoom="0.8" title="Inzoomen">＋</button><button data-zoom="1.25" title="Uitzoomen">－</button></div></div>
   <div class="side">
     <h1>LUMEN · GEZICHTSEDITOR</h1>
     <p class="sub">Geef lippen, lipnaad en ogen aan. De editor maakt er vormen (shape keys) van voor praten, knipperen en uitdrukkingen.</p>
@@ -50,7 +55,7 @@ button.primary{background:var(--accent);color:#03181c;border-color:var(--accent)
       <div class="row" style="margin-top:8px">
         <button id="bFront">Vooraanzicht</button><button id="bSetFront">Dit is het vooraanzicht</button><button id="bHide">Lijnen verbergen</button><button id="bXray">Röntgen</button>
       </div>
-      <p class="small">Draai het hoofd met de muis (rechts slepen = verschuiven, scrollen = zoomen). Kijkt het gezicht recht naar je, klik dan "Dit is het vooraanzicht".</p>
+      <p class="small">Draai het hoofd met de muis, scrollen = zoomen. <b>Verschuiven (pannen):</b> rechts slepen, middelste muisknop, Shift + slepen, spatiebalk ingedrukt houden + slepen, de pijltjestoetsen, of de knoppen linksonder. Dubbelklik op het hoofd (zonder lippen- of oogmodus) om daar het draaipunt te zetten. Kijkt het gezicht recht naar je, klik dan "Dit is het vooraanzicht".</p>
     </section>
 
     <section>
@@ -138,6 +143,12 @@ scene.add(new THREE.HemisphereLight(0xffffff, 0x223344, 0.75));
 const key = new THREE.DirectionalLight(0xffffff, 0.75); key.position.set(0.6, 1, 2); scene.add(key);
 const cam = new THREE.PerspectiveCamera(30, 1, 0.005, 100);
 const ctl = new THREE.OrbitControls(cam, cv); ctl.enableDamping = true;
+ctl.mouseButtons.MIDDLE = THREE.MOUSE.PAN; ctl.screenSpacePanning = true; ctl.keyPanSpeed = 18;
+let panMode = false, spacePan = false;
+function setPanLeft(){ const on = panMode || spacePan; ctl.mouseButtons.LEFT = on ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE; cv.style.cursor = on ? 'grab' : ''; }
+function panBy(dx, dy){ const d = cam.position.distanceTo(ctl.target)*0.08, r = new THREE.Vector3().setFromMatrixColumn(cam.matrix, 0), u = new THREE.Vector3().setFromMatrixColumn(cam.matrix, 1);
+  const off = r.multiplyScalar(dx*d).add(u.multiplyScalar(dy*d)); cam.position.add(off); ctl.target.add(off); ctl.update(); }
+function zoomBy(f){ const o = cam.position.clone().sub(ctl.target).multiplyScalar(f); cam.position.copy(ctl.target).add(o); ctl.update(); }
 cam.position.set(0, 0, 4);
 function resize(){ const r = cv.parentElement.getBoundingClientRect(); R.setSize(r.width, r.height, false); cam.aspect = r.width/r.height; cam.updateProjectionMatrix(); try{ markers.traverse(o => { if (o.material && o.material.resolution) o.material.resolution.set(r.width, r.height); }); }catch(e){} }
 addEventListener('resize', resize); resize();
@@ -298,8 +309,12 @@ function nearest(list, ev){
   return best;
 }
 const dotTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d');
-  g.fillStyle = '#fff'; g.beginPath(); g.arc(32,32,26,0,7); g.fill(); g.strokeStyle = '#000'; g.lineWidth = 8; g.stroke(); return new THREE.CanvasTexture(c); })();
-function dot(p, col, size){ const s = new THREE.Sprite(new THREE.SpriteMaterial({map:dotTex, color:col, depthTest:false, sizeAttenuation:false})); s.scale.setScalar(size || 0.018); s.position.copy(p); s.renderOrder = 10; return s; }
+  // a hollow ring with a tiny centre dot: you see the skin under the handle and exactly where it sits
+  g.strokeStyle = 'rgba(0,0,0,.75)'; g.lineWidth = 9; g.beginPath(); g.arc(32,32,24,0,7); g.stroke();
+  g.strokeStyle = '#fff'; g.lineWidth = 5; g.beginPath(); g.arc(32,32,24,0,7); g.stroke();
+  g.fillStyle = 'rgba(0,0,0,.75)'; g.beginPath(); g.arc(32,32,4.5,0,7); g.fill(); g.fillStyle = '#fff'; g.beginPath(); g.arc(32,32,2.5,0,7); g.fill();
+  return new THREE.CanvasTexture(c); })();
+function dot(p, col, size){ const s = new THREE.Sprite(new THREE.SpriteMaterial({map:dotTex, color:col, depthTest:false, sizeAttenuation:false, transparent:true, opacity:0.9})); s.scale.setScalar((size || 0.018)*1.35); s.position.copy(p); s.renderOrder = 10; return s; }
 function line(pts, col, loop){ const g = new THREE.BufferGeometry().setFromPoints(pts); const l = new (loop ? THREE.LineLoop : THREE.Line)(g, new THREE.LineBasicMaterial({color:col, depthTest:false})); l.renderOrder = 9; return l; }
 function ellipsePts(e){ const el = eyeEllipse(e), out = []; for (let i = 0; i < 48; i++){ const a = i/48*Math.PI*2; out.push(fromF(new THREE.Vector3(el.c.x + Math.cos(a)*el.rx, el.c.y + Math.sin(a)*el.ry, el.c.z + 0.002*(S.unit||1)))); } return out; }
 /* the clicked points are handles of a smooth (centripetal Catmull-Rom) curve */
@@ -341,7 +356,7 @@ function nearestOnCurve(c, ev){
 }
 let drag = null, downAt = null;
 cv.addEventListener('pointerdown', ev => {
-  if (ev.button !== 0 || !faceMesh) return;
+  if (ev.button !== 0 || !faceMesh || panMode || spacePan || ev.shiftKey || ev.ctrlKey || ev.metaKey){ downAt = null; return; }
   downAt = {x:ev.clientX, y:ev.clientY};
   const list = S.mode === 'lip' ? S.lip : S.mode === 'seam' ? S.seam : null;
   if (list){
@@ -360,6 +375,7 @@ cv.addEventListener('pointermove', ev => {
   drawMarkers(); if (drag.eye) rebuildParts();
 });
 cv.addEventListener('dblclick', ev => {
+  if (S.mode === 'view'){ const p = pick(ev); if (p){ const off = p.clone().sub(ctl.target); ctl.target.add(off); cam.position.add(off); ctl.update(); setHint('Draaipunt verplaatst.'); } return; }
   const list = S.mode === 'lip' ? S.lip : S.mode === 'seam' ? S.seam : null; if (!list) return;
   const i = nearest(list, ev); if (i < 0) return; list.splice(i, 1); S.keys = null; drawMarkers(); updInfo();
 });
@@ -381,6 +397,21 @@ addEventListener('pointerup', ev => {
   }
   S.keys = null; drawMarkers(); updInfo();
 });
+
+/* ---------------- panning ---------------- */
+$('bPan').onclick = () => { panMode = !panMode; $('bPan').classList.toggle('on', panMode); setPanLeft();
+  setHint(panMode ? 'Verschuiven: sleep met de linker muisknop. Klik nogmaals op "Verschuiven" om weer punten te zetten.' : HINTS[S.mode]); };
+document.querySelectorAll('[data-pan]').forEach(b => b.addEventListener('click', () => { const [x, y] = b.dataset.pan.split(',').map(Number); panBy(x, y); }));
+document.querySelectorAll('[data-zoom]').forEach(b => b.addEventListener('click', () => zoomBy(+b.dataset.zoom)));
+const typing = () => /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '') && document.activeElement.type !== 'range' && document.activeElement.type !== 'checkbox';
+const ARROWS = {ArrowLeft:[-0.5,0], ArrowRight:[0.5,0], ArrowUp:[0,0.5], ArrowDown:[0,-0.5]};
+addEventListener('keydown', e => {
+  const ae = document.activeElement || {}, inField = /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName || '');
+  if (e.code === 'Space' && !typing()){ e.preventDefault(); if (ae.tagName === 'BUTTON') ae.blur(); if (!spacePan){ spacePan = true; setPanLeft(); } }
+  else if (ARROWS[e.key] && !inField){ e.preventDefault(); panBy(...ARROWS[e.key]); }
+});
+addEventListener('keyup', e => { if (e.code === 'Space'){ e.preventDefault(); spacePan = false; setPanLeft(); } });
+addEventListener('blur', () => { spacePan = false; setPanLeft(); });
 
 /* ---------------- modes and controls ---------------- */
 const HINTS = {
