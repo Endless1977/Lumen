@@ -381,6 +381,19 @@ textarea::placeholder{color:var(--mute)}
 .hp-empty{margin:0;padding:4px 14px 16px;color:var(--mute);font-size:14px}
 .hp-sec{padding:10px 14px 4px;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);display:flex;justify-content:space-between;align-items:center;gap:8px}
 .hpanel .clim,.hpanel .lamps{padding-top:6px}
+.a-big{display:grid;grid-template-columns:auto 1fr;align-items:baseline;gap:4px 10px;padding:4px 14px 12px}
+.a-big b{font-family:var(--disp,inherit);font-size:44px;font-weight:500;line-height:1;color:var(--laser);text-shadow:0 0 18px color-mix(in srgb,var(--laser) 45%,transparent)}
+.a-big span{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.a-bar{grid-column:1/-1;display:block;height:6px;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.a-bar em{display:block;height:100%;width:0;background:var(--laser);box-shadow:0 0 10px var(--laser);transition:width .8s}
+.a-big.low b{color:var(--amber)} .a-big.low .a-bar em{background:var(--amber);box-shadow:0 0 10px var(--amber)}
+.a-big.chg .a-bar em{background:repeating-linear-gradient(90deg,var(--laser) 0 10px,color-mix(in srgb,var(--laser) 55%,transparent) 10px 20px);background-size:20px 100%;animation:achg 1s linear infinite}
+@keyframes achg{to{background-position:20px 0}}
+.a-rows{display:grid;padding:0 14px 8px}
+.a-kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent);font-size:14px}
+.a-kv span{color:var(--mute)} .a-kv b{font-weight:500;text-align:right}
+.a-btns{padding:2px 14px 14px}
+.a-credit{padding-top:6px;font-size:10.5px;opacity:.75}
 @media (max-width:760px){
   .floors{top:auto;bottom:70px;transform:none;grid-auto-flow:column;left:8px;right:8px;justify-content:center}
   .floors button{min-width:0;padding:8px 9px}
@@ -754,6 +767,7 @@ button.cam:focus-visible{outline:2px solid var(--laser);outline-offset:3px}
     <nav class="tabs" id="tabs" role="tablist" aria-label="Schermen">
       <button type="button" role="tab" data-view="lumen" aria-selected="true" data-i18n="tab.lumen">Lumen</button>
       <button type="button" role="tab" data-view="huis" aria-selected="false" data-i18n="tab.huis">Huis</button>
+      <button type="button" role="tab" data-view="auto" aria-selected="false" data-i18n="tab.auto" hidden>Auto</button>
       <button type="button" role="tab" data-view="bediening" aria-selected="false" data-i18n="tab.bediening">Bediening</button>
       <button type="button" role="tab" data-view="radio" aria-selected="false" data-i18n="tab.media">Media</button>
       <button type="button" role="tab" data-view="cctv" aria-selected="false" data-i18n="tab.cctv">CCTV</button>
@@ -780,6 +794,13 @@ button.cam:focus-visible{outline:2px solid var(--laser);outline-offset:3px}
       <div class="hstat" id="hStat"></div>
       <aside class="hpanel holo" id="hPanel" hidden aria-live="polite"></aside>
       <p class="hmsg" id="hMsg" hidden></p>
+    </div>
+    <div class="view huis auto" id="viewAuto" hidden>
+      <canvas id="ac" data-i18n-attr="aria-label:auto.canvas_label" aria-label="3D-hologram van de auto. Sleep om te draaien, knijp om te zoomen."></canvas>
+      <div class="floors acars" id="aCars" role="group" hidden></div>
+      <p class="hhelp" id="aHelp" data-i18n="auto.hhelp">Sleep om te draaien · knijp om te zoomen</p>
+      <aside class="hpanel holo" id="aPanel" hidden aria-live="polite"></aside>
+      <p class="hmsg" id="aMsg" hidden></p>
     </div>
     <div class="view ctl" id="viewCtl" hidden>
       <div class="ctl-top" role="group" aria-label="Soort apparaat">
@@ -894,6 +915,8 @@ button.cam:focus-visible{outline:2px solid var(--laser);outline-offset:3px}
       <label for="cfgChOut" data-i18n="cfg.buitentemp">Buitentemperatuur (KNMI-sensor)</label><input id="cfgChOut" placeholder="sensor.knmi_buitentemperatuur">
       <label for="cfgStations" data-i18n="cfg.radiozenders">Radiozenders (één per regel: naam | adres)</label><textarea id="cfgStations" rows="5"></textarea>
       <label for="cfgHouse" data-i18n="cfg.huismodel">Huismodel (3D, voor het blad Huis)</label><input id="cfgHouse" placeholder="house.glb (voorbeeld) of /local/mijn_huis.glb">
+      <label for="cfgCarModel" data-i18n="cfg.automodel">Automodel (3D, voor het blad Auto; leeg = voorbeeldauto bij een gekoppelde auto)</label><input id="cfgCarModel" list="carModelList" placeholder="car.glb (voorbeeld) of /local/mijn_auto.glb"><datalist id="carModelList"><option value="car.glb"></option></datalist>
+      <label for="cfgCarLink" data-i18n="cfg.autokoppeling">Auto koppelen</label><select id="cfgCarLink"><option value="auto" data-i18n="cfg.auto_automatisch">Automatisch (herkende auto)</option><option value="none" data-i18n="cfg.auto_geen">Geen koppeling (alleen weergave)</option></select>
       <label for="cfgRooms" data-i18n="cfg.kamers_koppelen">Kamers koppelen (één per regel: kamer = entiteiten)</label><textarea id="cfgRooms" rows="4"></textarea>
       <label for="cfgPi" data-i18n="cfg.pi_status">Pi-status: CPU, temperatuur, geheugen, SSD (4 sensoren, leeg = zelf zoeken)</label><input id="cfgPi" placeholder="sensor.system_monitor_processor_use, …">
       <label for="cfgCctv" data-i18n="cfg.cctv_map">Opnames CCTV: map in de mediabrowser (leeg = Frigate)</label><input id="cfgCctv" placeholder="media-source://frigate">
@@ -1692,7 +1715,7 @@ const log=$('log'), form=$('form'), msg=$('msg'), send=$('send'), stop=$('stop')
 const DEF = { base: location.protocol.startsWith('http') ? location.origin : 'http://localhost:8123',
   token:'', agent:'', tts:'', voice:'', speaker:'', trim:'', chSolar:'', chBatt:'', chIn:'', chOut:'sensor.knmi_buitentemperatuur',
   stations:'NPO Radio 1 | https://icecast.omroep.nl/radio1-bb-mp3\nNPO Radio 2 | https://icecast.omroep.nl/radio2-bb-mp3\nNPO 3FM | https://icecast.omroep.nl/3fm-bb-mp3\nNPO Klassiek | https://icecast.omroep.nl/radio4-bb-mp3', stt:'', models:'girl_bust.glb', mpBase:'', lang:'nl', uiLang:'nl', entities:'', place:'',
-  house:'', pi:'', cctvRoot:'', rooms:'', hide:'',
+  house:'', carModel:'', carLink:'auto', pi:'', cctvRoot:'', rooms:'', hide:'',
   // Instellingen-blad (Bediening > Instellingen): leeg = val terug op de
   // ingebouwde standaardwaarden (zie roomName()/camName()/alarmCamList()
   // in het Huis/CCTV-script-blok) - zo blijft deze installatie werken zonder
@@ -1708,8 +1731,8 @@ let C = {...DEF};
 try{ Object.assign(C, JSON.parse(localStorage.getItem('lumen-ha')||'{}')); }catch(e){}
 for(const k of ['house','rooms']) if(C[k]==null) C[k]=DEF[k];
 try{ const q=new URLSearchParams(location.search); for(const k of ['agent','tts','voice','stt','lang','place']){ const v=q.get(k); if(v && !C[k]) C[k]=v; } }catch(e){}
-const F = { base:$('cfgBase'), token:$('cfgToken'), agent:$('cfgAgent'), tts:$('cfgTts'), voice:$('cfgVoice'), speaker:$('cfgSpeaker'), trim:$('cfgTrim'), chSolar:$('cfgChSolar'), chBatt:$('cfgChBatt'), chIn:$('cfgChIn'), chOut:$('cfgChOut'), stations:$('cfgStations'), stt:$('cfgStt'), models:$('cfgModels'), mpBase:$('cfgMp'), lang:$('cfgLang'), place:$('cfgPlace'), uiLang:$('cfgUiLang'), entities:$('cfgEnt'), house:$('cfgHouse'), pi:$('cfgPi'), cctvRoot:$('cfgCctv'), rooms:$('cfgRooms'), hide:$('cfgHide') };
-function fillCfg(){ for(const k in F) F[k].value=C[k]||''; $('cfgBrowserMod').checked=!!C.browserMod; }
+const F = { base:$('cfgBase'), token:$('cfgToken'), agent:$('cfgAgent'), tts:$('cfgTts'), voice:$('cfgVoice'), speaker:$('cfgSpeaker'), trim:$('cfgTrim'), chSolar:$('cfgChSolar'), chBatt:$('cfgChBatt'), chIn:$('cfgChIn'), chOut:$('cfgChOut'), stations:$('cfgStations'), stt:$('cfgStt'), models:$('cfgModels'), mpBase:$('cfgMp'), lang:$('cfgLang'), place:$('cfgPlace'), uiLang:$('cfgUiLang'), entities:$('cfgEnt'), house:$('cfgHouse'), carModel:$('cfgCarModel'), carLink:$('cfgCarLink'), pi:$('cfgPi'), cctvRoot:$('cfgCctv'), rooms:$('cfgRooms'), hide:$('cfgHide') };
+function fillCfg(){ for(const k in F) F[k].value=C[k]||''; if(F.carLink && !F.carLink.value) F.carLink.value='auto'; $('cfgBrowserMod').checked=!!C.browserMod; }
 fillCfg();
 
 /* ---------- i18n: schermtaal-woordenboek (los van C.lang, dat is de spraak-
@@ -1729,6 +1752,7 @@ fillCfg();
 const I18N = {
   nl: {
     'tab.lumen':'Lumen', 'tab.huis':'Huis', 'tab.bediening':'Bediening', 'tab.media':'Media', 'tab.cctv':'CCTV', 'tab.weergave':'Weergave en model',
+    "tab.auto":"Auto", "auto.hhelp":"Sleep om te draaien · knijp om te zoomen", "auto.canvas_label":"3D-hologram van de auto. Sleep om te draaien, knijp om te zoomen.", "auto.alleen_weergave":"Alleen weergave: deze auto is niet gekoppeld aan Home Assistant.", "auto.model_niet_geladen":"Het automodel kon niet laden ({url}). Kijk bij Instellingen › Automodel.", "auto.laden":"Laden", "auto.rijdt":"Rijdt", "auto.aangesloten":"Aangesloten", "auto.geparkeerd":"Geparkeerd", "auto.thuis":"thuis", "auto.onderweg":"onderweg", "auto.accu":"Accu", "auto.brandstof":"Brandstof", "auto.bereik":"Actieradius", "auto.laadlimiet":"Laadlimiet", "auto.tot_vol":"Tot vol", "auto.laadvermogen":"Laadvermogen", "auto.km_stand":"Kilometerstand", "auto.binnen":"Binnen", "auto.buiten":"Buiten", "auto.locatie":"Locatie", "auto.deuren":"Deuren en ramen", "auto.alles_dicht":"alles dicht", "auto.banden":"Banden", "auto.vergrendeld":"Vergrendeld", "auto.open":"nee", "auto.ja":"ja", "auto.vergrendel":"Vergrendelen", "auto.ontgrendel":"Ontgrendelen", "auto.zeker":"Tik nog een keer om te ontgrendelen", "auto.klimaat":"Klimaat", "auto.laadklep":"Laadklep", "auto.wacht":"Wachtmodus", "auto.knipper":"Lichten knipperen", "auto.toeter":"Toeteren", "auto.wakker":"Wakker maken", "auto.bediening":"Bediening", "cfg.automodel":"Automodel (3D, voor het blad Auto; leeg = voorbeeldauto bij een gekoppelde auto)", "cfg.autokoppeling":"Auto koppelen", "cfg.auto_automatisch":"Automatisch (herkende auto)", "cfg.auto_geen":"Geen koppeling (alleen weergave)",
     'ctl.klimaat':'Klimaat', 'ctl.licht':'Verlichting', 'ctl.energie':'Energie', 'ctl.overig':'Overig', 'ctl.instellingen':'Instellingen',
     'cfg.uilang':'Schermtaal', 'cfg.ha_adres':'Home Assistant-adres', 'cfg.token':'Langlevend toegangstoken (leeg = je HA-login gebruiken)',
     'cfg.agent':'Gespreksagent (leeg = standaard)', 'cfg.tts':'Stem (TTS-entiteit, leeg = browserstem)', 'cfg.stemvariant':'Stemvariant (optioneel)',
@@ -1920,6 +1944,7 @@ const I18N = {
   },
   en: {
     'tab.lumen':'Lumen', 'tab.huis':'House', 'tab.bediening':'Controls', 'tab.media':'Media', 'tab.cctv':'CCTV', 'tab.weergave':'View and model',
+    "tab.auto":"Car", "auto.hhelp":"Drag to rotate · pinch to zoom", "auto.canvas_label":"3D hologram of the car. Drag to rotate, pinch to zoom.", "auto.alleen_weergave":"Display only: this car is not linked to Home Assistant.", "auto.model_niet_geladen":"The car model could not be loaded ({url}). Check Settings › Car model.", "auto.laden":"Charging", "auto.rijdt":"Driving", "auto.aangesloten":"Plugged in", "auto.geparkeerd":"Parked", "auto.thuis":"home", "auto.onderweg":"away", "auto.accu":"Battery", "auto.brandstof":"Fuel", "auto.bereik":"Range", "auto.laadlimiet":"Charge limit", "auto.tot_vol":"Until full", "auto.laadvermogen":"Charging power", "auto.km_stand":"Odometer", "auto.binnen":"Inside", "auto.buiten":"Outside", "auto.locatie":"Location", "auto.deuren":"Doors and windows", "auto.alles_dicht":"all closed", "auto.banden":"Tyres", "auto.vergrendeld":"Locked", "auto.open":"no", "auto.ja":"yes", "auto.vergrendel":"Lock", "auto.ontgrendel":"Unlock", "auto.zeker":"Tap again to unlock", "auto.klimaat":"Climate", "auto.laadklep":"Charge port", "auto.wacht":"Sentry mode", "auto.knipper":"Flash lights", "auto.toeter":"Honk", "auto.wakker":"Wake up", "auto.bediening":"Controls", "cfg.automodel":"Car model (3D, for the Car tab; empty = example car for a linked car)", "cfg.autokoppeling":"Link car", "cfg.auto_automatisch":"Automatic (recognised car)", "cfg.auto_geen":"No link (display only)",
     'ctl.klimaat':'Climate', 'ctl.licht':'Lighting', 'ctl.energie':'Energy', 'ctl.overig':'Other', 'ctl.instellingen':'Settings',
     'cfg.uilang':'Display language', 'cfg.ha_adres':'Home Assistant address', 'cfg.token':'Long-lived access token (empty = use your HA login)',
     'cfg.agent':'Conversation agent (empty = default)', 'cfg.tts':'Voice (TTS entity, empty = browser voice)', 'cfg.stemvariant':'Voice variant (optional)',
@@ -2111,6 +2136,7 @@ const I18N = {
   },
   de: {
     'tab.lumen':'Lumen', 'tab.huis':'Haus', 'tab.bediening':'Bedienung', 'tab.media':'Medien', 'tab.cctv':'CCTV', 'tab.weergave':'Ansicht und Modell',
+    "tab.auto":"Auto", "auto.hhelp":"Ziehen zum Drehen · zum Zoomen zusammenziehen", "auto.canvas_label":"3D-Hologramm des Autos. Ziehen zum Drehen, zusammenziehen zum Zoomen.", "auto.alleen_weergave":"Nur Anzeige: dieses Auto ist nicht mit Home Assistant verknüpft.", "auto.model_niet_geladen":"Das Automodell konnte nicht geladen werden ({url}). Siehe Einstellungen › Automodell.", "auto.laden":"Lädt", "auto.rijdt":"Fährt", "auto.aangesloten":"Angeschlossen", "auto.geparkeerd":"Geparkt", "auto.thuis":"zu Hause", "auto.onderweg":"unterwegs", "auto.accu":"Akku", "auto.brandstof":"Kraftstoff", "auto.bereik":"Reichweite", "auto.laadlimiet":"Ladelimit", "auto.tot_vol":"Bis voll", "auto.laadvermogen":"Ladeleistung", "auto.km_stand":"Kilometerstand", "auto.binnen":"Innen", "auto.buiten":"Außen", "auto.locatie":"Standort", "auto.deuren":"Türen und Fenster", "auto.alles_dicht":"alles zu", "auto.banden":"Reifen", "auto.vergrendeld":"Verriegelt", "auto.open":"nein", "auto.ja":"ja", "auto.vergrendel":"Verriegeln", "auto.ontgrendel":"Entriegeln", "auto.zeker":"Zum Entriegeln noch einmal tippen", "auto.klimaat":"Klima", "auto.laadklep":"Ladeklappe", "auto.wacht":"Wächtermodus", "auto.knipper":"Lichthupe", "auto.toeter":"Hupen", "auto.wakker":"Aufwecken", "auto.bediening":"Bedienung", "cfg.automodel":"Automodell (3D, für die Registerkarte Auto; leer = Beispielauto bei einem verknüpften Auto)", "cfg.autokoppeling":"Auto verknüpfen", "cfg.auto_automatisch":"Automatisch (erkanntes Auto)", "cfg.auto_geen":"Keine Verknüpfung (nur Anzeige)",
     'ctl.klimaat':'Klima', 'ctl.licht':'Beleuchtung', 'ctl.energie':'Energie', 'ctl.overig':'Sonstiges', 'ctl.instellingen':'Einstellungen',
     'cfg.uilang':'Anzeigesprache', 'cfg.ha_adres':'Home Assistant-Adresse', 'cfg.token':'Langlebiges Zugriffstoken (leer = deinen HA-Login verwenden)',
     'cfg.agent':'Gesprächsagent (leer = Standard)', 'cfg.tts':'Stimme (TTS-Entität, leer = Browserstimme)', 'cfg.stemvariant':'Stimmvariante (optional)',
@@ -2327,6 +2353,7 @@ const I18N = {
   },
   fr: {
     'tab.lumen':'Lumen', 'tab.huis':'Maison', 'tab.bediening':'Commandes', 'tab.media':'Médias', 'tab.cctv':'CCTV', 'tab.weergave':'Affichage et modèle',
+    "tab.auto":"Voiture", "auto.hhelp":"Faites glisser pour tourner · pincez pour zoomer", "auto.canvas_label":"Hologramme 3D de la voiture. Faites glisser pour tourner, pincez pour zoomer.", "auto.alleen_weergave":"Affichage seul : cette voiture n'est pas reliée à Home Assistant.", "auto.model_niet_geladen":"Le modèle de voiture n'a pas pu être chargé ({url}). Voir Paramètres › Modèle de voiture.", "auto.laden":"En charge", "auto.rijdt":"En route", "auto.aangesloten":"Branchée", "auto.geparkeerd":"Garée", "auto.thuis":"à la maison", "auto.onderweg":"en déplacement", "auto.accu":"Batterie", "auto.brandstof":"Carburant", "auto.bereik":"Autonomie", "auto.laadlimiet":"Limite de charge", "auto.tot_vol":"Avant plein", "auto.laadvermogen":"Puissance de charge", "auto.km_stand":"Kilométrage", "auto.binnen":"Intérieur", "auto.buiten":"Extérieur", "auto.locatie":"Position", "auto.deuren":"Portes et vitres", "auto.alles_dicht":"tout fermé", "auto.banden":"Pneus", "auto.vergrendeld":"Verrouillée", "auto.open":"non", "auto.ja":"oui", "auto.vergrendel":"Verrouiller", "auto.ontgrendel":"Déverrouiller", "auto.zeker":"Touchez encore pour déverrouiller", "auto.klimaat":"Climatisation", "auto.laadklep":"Trappe de charge", "auto.wacht":"Mode sentinelle", "auto.knipper":"Appel de phares", "auto.toeter":"Klaxon", "auto.wakker":"Réveiller", "auto.bediening":"Commandes", "cfg.automodel":"Modèle de voiture (3D, pour l'onglet Voiture ; vide = voiture d'exemple pour une voiture reliée)", "cfg.autokoppeling":"Relier la voiture", "cfg.auto_automatisch":"Automatique (voiture reconnue)", "cfg.auto_geen":"Aucun lien (affichage seul)",
     'ctl.klimaat':'Climat', 'ctl.licht':'Éclairage', 'ctl.energie':'Énergie', 'ctl.overig':'Autre', 'ctl.instellingen':'Paramètres',
     'cfg.uilang':"Langue d'affichage", 'cfg.ha_adres':'Adresse Home Assistant',
     'cfg.token':"Jeton d'accès longue durée (vide = utiliser votre connexion HA)",
@@ -4267,7 +4294,7 @@ function row(id, areaName){
 }
 
 /* ---------------- tab switching with laser transition ---------------- */
-const VIEWS = {huis:'viewHuis', bediening:'viewCtl', radio:'viewRadio', cctv:'viewCctv', weergave:'viewWeergave'};
+const VIEWS = {huis:'viewHuis', auto:'viewAuto', bediening:'viewCtl', radio:'viewRadio', cctv:'viewCctv', weergave:'viewWeergave'};
 function sweep(dir){
   const sw = $('sweep'); if (!sw || reduce) return;
   sw.style.setProperty('--h', (app.querySelector('.stage').clientHeight) + 'px');
@@ -4292,12 +4319,13 @@ function show(view){
     else { old.classList.remove('reveal'); old.classList.add('leave'); setTimeout(() => { if (S.view === 'lumen'){ old.hidden = true; old.classList.remove('leave'); } }, 620); }
   }
   if (view === 'huis') houseOpen(); else houseClose();
+  if (view === 'auto'){ if (S.carOpen) S.carOpen(); } else if (S.carClose) S.carClose();
   if (view === 'bediening') renderCtl(true);
   if (view === 'radio') renderMedia(true);
   if (view === 'weergave') wgShift();
   if (prev === 'weergave' && S.calibrating){ const cb = $('calibCancel'); if (cb) cb.click(); }
   if (view === 'cctv') cctvOpen(); else if (prev === 'cctv') cctvClose();
-  if (['huis','bediening','radio','cctv'].includes(view)) startPoll(); else stopPoll();
+  if (['huis','auto','bediening','radio','cctv'].includes(view)) startPoll(); else stopPoll();
 }
 S.showView = show;
 $('tabs').addEventListener('click', e => { const b = e.target.closest('button[data-view]'); if (b) show(b.dataset.view); });
@@ -6621,6 +6649,340 @@ function manageCard(){
   det.append(f, el('p', 'lhint wpad', S.t('media.dienst_start_hint')), rw);
   return {el:k.c};
 }
+/* ================= Auto: the car as a hologram, with live data when Home Assistant knows it =================
+   A car is recognised through its integration (Tesla, Kia/Hyundai, BMW, VW, Renault, …). The tab only
+   appears for a recognised car, or when a car model is chosen by hand (then it is display only). */
+const CAR_INTS = ['tesla_fleet','teslemetry','tessie','tesla_custom','kia_uvo','hyundai_kia_connect','bmw_connected_drive','mbapi2020','mercedes_me',
+  'volvo','volvooncall','renault','nissan_leaf','volkswagen_we_connect_id','volkswagencarnet','myskoda','skodaconnect','audiconnect','cupra_we_connect',
+  'polestar_api','toyota','mazda','subaru','fordpass','ford','smartcar','stellantis_vehicles','psa_car_controller','mg_saic','porscheconnect','jlrincontrol',
+  'byd','lynkco','zeekr','leaf_spy','ocpp_vehicle','evcc_intg'];
+const CAR_TPL = "{% set ns = namespace(l=[]) %}{% for i in " + JSON.stringify(CAR_INTS) + " %}{% for e in integration_entities(i) %}{% set d = device_id(e) %}"
+  + "{% set ns.l = ns.l + [[i, e, d, device_attr(d, 'name_by_user') or device_attr(d, 'name'), device_attr(d, 'manufacturer'), device_attr(d, 'model')]] %}{% endfor %}{% endfor %}{{ ns.l | tojson }}";
+(function(){
+let CARS = [], carIdx = 0, carDetT = 0, A = null;
+const obj = id => id.split('.')[1], dom = id => id.split('.')[0];
+function carRoles(ents){
+  const f = (d, re, not) => ents.find(id => dom(id) === d && re.test(obj(id)) && !(not && not.test(obj(id))));
+  const dc = id => ST[id] && ST[id].attributes.device_class;
+  const R = {};
+  R.soc = f('sensor', /(^|_)(battery_level|state_of_charge|ev_battery_level|battery_soc|soc|battery_percentage|battery_charge_level)$/, /(phone|key|tpms|tire|tyre|12v|aux|starter)/)
+       || ents.find(id => dom(id) === 'sensor' && dc(id) === 'battery' && !/(phone|key|tpms|tire|tyre|12v|aux|starter)/.test(obj(id)));
+  R.range = f('sensor', /(^|_)battery_range$/) || f('sensor', /(est|estimated)_?battery_range$/) || f('sensor', /(ev_range|ev_driving_range|electric_range|remaining_range_electric|range_electric|driving_range|remaining_range|total_driving_range)$/) || f('sensor', /_range$/, /(ideal|fuel|charge_range)/);
+  R.fuel = f('sensor', /(fuel_level|fuel_percent|fuel_tank_level|remaining_fuel_percent)$/);
+  R.fuelRange = f('sensor', /fuel_(driving_)?range$/);
+  R.charging = f('sensor', /(^|_)(charging|charging_state|charge_state|charger_state|charging_status)$/) || f('binary_sensor', /(^|_)(charging|ev_battery_charge|battery_charging|is_charging|charging_active)$/);
+  R.plug = f('binary_sensor', /(charge_cable|plugged|plug_in|plugged_in|charger_connected|ev_battery_plug|cable_connected|charging_cable)/);
+  R.power = f('sensor', /(charger_power|charging_power|charge_power|charge_rate_power|charging_rate_power)$/) || ents.find(id => dom(id) === 'sensor' && dc(id) === 'power' && /charg/.test(obj(id)));
+  R.tfull = f('sensor', /(time_to_full(_charge)?|estimated_charging_duration|charge_time_remaining|remaining_charging_time|ev_charge_duration|estimate_charge_time|charging_end_time|time_to_full_charge)$/);
+  R.limit = f('number', /(charge_limit|charge_soc_limit|target_soc|charge_target|charging_limit|ac_charging_limit|charge_limit_soc)/);
+  R.chgSw = f('switch', /(^|_)(charge|charging|charger)$/);
+  R.port = f('cover', /charge_port/);
+  R.lock = ents.find(id => dom(id) === 'lock' && !/charge_(cable|port)/.test(obj(id)));
+  R.clim = ents.find(id => dom(id) === 'climate');
+  R.tin = f('sensor', /(inside_temp(erature)?|interior_temp(erature)?|cabin_temp(erature)?)$/);
+  R.tout = f('sensor', /(outside_temp(erature)?|exterior_temp(erature)?|air_temperature)$/);
+  R.odo = f('sensor', /(odometer|mileage)$/);
+  R.trk = f('device_tracker', /location/) || ents.find(id => dom(id) === 'device_tracker' && !/(route|destination)/.test(obj(id)));
+  R.sentry = f('switch', /sentry/);
+  R.shift = f('sensor', /shift_state$/); R.speed = f('sensor', /(^|_)speed$/);
+  R.open = ents.filter(id => dom(id) === 'binary_sensor' && (['door','window','opening','garage_door'].includes(dc(id)) || /(door|window|trunk|frunk|tailgate|hood|bonnet|sunroof)/.test(obj(id))) && !/lock/.test(obj(id)));
+  R.tyres = ents.filter(id => dom(id) === 'sensor' && /(tire|tyre|tpms)/.test(obj(id)) && /(pressure|tpms)/.test(obj(id)) && !/(warning|last|time)/.test(obj(id)));
+  R.btns = ents.filter(id => dom(id) === 'button' && /(flash|honk|horn|wake)/.test(obj(id)));
+  return R;
+}
+const looksLikeCar = ents => { const R = carRoles(ents); return !!(R.soc || R.range || R.fuel || R.odo) && ents.length >= 3; };
+async function detectCars(){
+  carDetT = Date.now();
+  const found = [];
+  try{
+    let l = await api('/api/template', {method:'POST', body:JSON.stringify({template:CAR_TPL})});
+    if (typeof l === 'string') l = JSON.parse(l);
+    const by = new Map();
+    for (const [i, e, d, name, make, model] of (Array.isArray(l) ? l : [])){
+      const k = d || ('p:' + obj(e).split('_')[0]);
+      if (!by.has(k)) by.set(k, {key:k, integration:i, name:name || obj(e).split('_')[0], make:make || '', model:model || '', ents:[]});
+      by.get(k).ents.push(e);
+    }
+    for (const c of by.values()) if (!/(powerwall|energy|wall ?connector|solar|gateway|site|charger$|laadpaal)/i.test((c.model || '') + ' ' + (c.name || '')) && looksLikeCar(c.ents.filter(id => ST[id] || true))) found.push(c);
+  }catch(e){}
+  if (!found.length){
+    // no access to templates (not an admin) or an unknown integration: recognise cars by their entity names
+    if (!Object.keys(ST).length){ try{ const s = await api('/api/states'); for (const x of s) ST[x.entity_id] = x; }catch(e){} }
+    const ids = Object.keys(ST), seen = new Set();
+    for (const id of ids){
+      const m = dom(id) === 'sensor' && obj(id).match(/^(.+?)_(battery_level|ev_battery_level|state_of_charge|fuel_level)$/); if (!m || seen.has(m[1])) continue;
+      const p = m[1], ents = ids.filter(x => obj(x).startsWith(p + '_') || obj(x) === p);
+      if (!ents.some(x => /(range|odometer|mileage)/.test(obj(x)))) continue;
+      seen.add(p); const nm = ST[id].attributes.friendly_name || p;
+      found.push({key:'p:' + p, integration:'', name:cap1(nm.replace(/\s*(battery level|batterij(niveau)?|state of charge|ev battery level|fuel level)\s*$/i, '') || p.replace(/_/g, ' ')), make:'', model:'', ents});
+    }
+  }
+  CARS = found;
+  carOptions(); carVis();
+  if (S.view === 'auto') carRender(true);
+}
+function carOptions(){
+  const s = $('cfgCarLink'); if (!s) return;
+  const cur = cfg().carLink || 'auto';
+  [...s.options].filter(o => o.dataset.car).forEach(o => o.remove());
+  for (const c of CARS){ const o = document.createElement('option'); o.value = c.key; o.dataset.car = '1'; o.textContent = c.name + (c.model ? ' (' + c.model + ')' : ''); s.append(o); }
+  s.value = [...s.options].some(o => o.value === cur) ? cur : 'auto';
+}
+function carNow(){
+  const link = cfg().carLink || 'auto';
+  if (link === 'none') return null;
+  if (link !== 'auto') return CARS.find(c => c.key === link) || null;
+  return CARS[Math.min(carIdx, CARS.length - 1)] || null;
+}
+function carModelUrl(){ const m = (cfg().carModel || '').trim(); return m || (carNow() ? 'car.glb' : ''); }
+function carVis(){
+  const b = document.querySelector('#tabs button[data-view=auto]'); if (!b) return;
+  const on = !!carModelUrl();
+  b.hidden = !on;
+  if (!on && S.view === 'auto') show('lumen');
+}
+
+/* ---- 3D ---- */
+const ac = $('ac');
+const CAR_FS = `uniform vec3 uColor; uniform float uAlpha,uVis,uTime,uLevel,uLvOn;
+varying vec3 vW; varying vec3 vN;
+void main(){
+  vec3 v=normalize(cameraPosition-vW);
+  float fr=pow(1.-abs(dot(normalize(vN),v)),2.);
+  float scan=.78+.22*sin(vW.y*40.-uTime*3.);
+  float lv=uLvOn*(1.-smoothstep(uLevel-.02,uLevel+.02,vW.y));
+  float edge=uLvOn*(1.-smoothstep(0.,.035,abs(vW.y-uLevel)));
+  float a=(uAlpha*(.45+fr*1.4)*scan*(1.+lv*1.6)+edge*.35)*uVis;
+  gl_FragColor=vec4(uColor*(1.+lv*.5+edge*1.5),a);
+}`;
+function carInit(){
+  if (A) return;
+  if (!window.THREE || !THREE.GLTFLoader){ amsg(S.t('huis.geen_3d_bibliotheek')); return; }
+  const renderer = new THREE.WebGLRenderer({canvas:ac, antialias:true, powerPreference:'low-power'});
+  renderer.setClearColor(0x03070a, 1); renderer.setPixelRatio(Math.min(1.75, window.devicePixelRatio || 1));
+  const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(35, 1, 0.05, 200);
+  const color = new THREE.Color(laserCss());
+  A = {renderer, scene, cam, color, url:'', root:null, mats:[], running:false, goal:{th:0.9, ph:1.15, r:11.5}, ctl:{th:0.2, ph:1.0, r:16}, idle:0, soc:null, chg:false, t0:performance.now()};
+  new ResizeObserver(() => carResize()).observe($('viewAuto'));
+  // projection pad, battery ring and charge beams
+  const pad = new THREE.PolarGridHelper(3.4, 16, 5, 64);
+  pad.material.transparent = true; pad.material.opacity = .16; pad.material.blending = THREE.AdditiveBlending; pad.material.depthWrite = false; scene.add(pad);
+  const ringMat = c => new THREE.MeshBasicMaterial({color:c, transparent:true, opacity:.9, blending:THREE.AdditiveBlending, depthWrite:false, side:THREE.DoubleSide});
+  A.ringBg = new THREE.Mesh(new THREE.RingGeometry(3.55, 3.68, 96), ringMat(color)); A.ringBg.material.opacity = .14; A.ringBg.rotation.x = -Math.PI/2; scene.add(A.ringBg);
+  A.ring = new THREE.Mesh(new THREE.RingGeometry(3.52, 3.71, 96, 1, 0, 0.01), ringMat(color)); A.ring.rotation.x = -Math.PI/2; A.ring.position.y = 0.002; A.ring.visible = false; scene.add(A.ring);
+  const NB = 36; A.bPos = new Float32Array(NB*6);
+  const bg = new THREE.BufferGeometry(); bg.setAttribute('position', new THREE.BufferAttribute(A.bPos, 3));
+  A.beams = new THREE.LineSegments(bg, new THREE.LineBasicMaterial({color, transparent:true, opacity:.5, blending:THREE.AdditiveBlending, depthWrite:false}));
+  A.beams.frustumCulled = false; A.beams.visible = false; scene.add(A.beams);
+  carControls();
+}
+function amsg(t){ const m = $('aMsg'); if (m){ m.textContent = t || ''; m.hidden = !t; } }
+function carResize(){
+  if (!A) return; const w = ac.clientWidth, h = ac.clientHeight; if (!w || !h) return;
+  A.renderer.setSize(w, h, false); A.cam.aspect = w/h; A.cam.updateProjectionMatrix();
+}
+function carLoad(url){
+  if (!A || A.url === url) return;
+  A.url = url; if (A.root){ A.scene.remove(A.root); A.root = null; A.mats = []; }
+  if (!url){ return; }
+  amsg(''); A.credit = null;
+  new THREE.GLTFLoader().load(url, gltf => {
+    if (A.url !== url) return;
+    const root = gltf.scene, box = new THREE.Box3().setFromObject(root), size = box.getSize(new THREE.Vector3());
+    const k = 4.6/Math.max(size.x, size.z, 1e-6), c = box.getCenter(new THREE.Vector3());
+    const holder = new THREE.Group(); root.position.set(-c.x, -box.min.y, -c.z); holder.add(root); holder.scale.setScalar(k);
+    A.height = size.y*k;
+    const ex = gltf.parser && gltf.parser.json && gltf.parser.json.asset && gltf.parser.json.asset.extras;
+    A.credit = ex && (ex.title || ex.author) ? ex : null;
+    root.traverse(o => {
+      if (!o.isMesh) return;
+      const fill = new THREE.ShaderMaterial({uniforms:{uColor:{value:A.color.clone()}, uAlpha:{value:.05}, uVis:{value:1}, uTime:{value:0}, uLevel:{value:-1}, uLvOn:{value:0}},
+        vertexShader:FILL_VS, fragmentShader:CAR_FS, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending, side:THREE.DoubleSide});
+      const edge = new THREE.ShaderMaterial({uniforms:{uColor:{value:A.color.clone()}, uAlpha:{value:.42}, uVis:{value:1}, uCut:{value:1e3}, uTime:{value:0}, uHi:{value:0}},
+        vertexShader:EDGE_VS, fragmentShader:EDGE_FS, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending});
+      o.material = fill; o.renderOrder = 1;
+      const e = new THREE.LineSegments(new THREE.EdgesGeometry(o.geometry, 28), edge); e.renderOrder = 2; o.add(e);
+      A.mats.push(fill, edge);
+    });
+    A.root = holder; A.scene.add(holder); A.vis0 = performance.now();
+    carRender(true);
+  }, undefined, () => { if (A.url === url) amsg(S.t('auto.model_niet_geladen').replace('{url}', url)); });
+}
+function carSetRing(soc, chg){
+  if (!A) return;
+  const on = soc != null && !isNaN(soc);
+  A.ring.visible = on; A.ringBg.visible = on;
+  if (on && Math.abs((A.soc ?? -1) - soc) > 0.2){
+    A.ring.geometry.dispose(); A.ring.geometry = new THREE.RingGeometry(3.52, 3.71, 96, 1, Math.PI/2, -Math.max(0.01, soc/100*Math.PI*2));
+    const col = soc < 20 ? new THREE.Color(AMBER) : A.color; A.ring.material.color.copy(col);
+  }
+  A.soc = on ? soc : null; A.chg = !!chg; A.beams.visible = !!chg;
+  for (const m of A.mats) if (m.uniforms.uLevel){ m.uniforms.uLvOn.value = on ? 1 : 0; m.uniforms.uLevel.value = on ? (A.height || 1.5)*soc/100 : -1; }
+}
+function carControls(){
+  const P = new Map(); let pinch = null;
+  const hide = () => { const h = $('aHelp'); if (h) h.style.opacity = 0; A.idle = performance.now(); };
+  ac.addEventListener('pointerdown', e => { ac.setPointerCapture(e.pointerId); P.set(e.pointerId, {x:e.clientX, y:e.clientY}); pinch = null; });
+  ac.addEventListener('pointermove', e => {
+    const p = P.get(e.pointerId); if (!p) return;
+    if (P.size === 1){ A.goal.th -= (e.clientX - p.x)*0.007; A.goal.ph = Math.max(0.25, Math.min(1.5, A.goal.ph - (e.clientY - p.y)*0.005)); A.ctl.th = A.goal.th; A.ctl.ph = A.goal.ph; hide(); }
+    p.x = e.clientX; p.y = e.clientY;
+    if (P.size === 2){ const [a, b] = [...P.values()], d = Math.hypot(a.x - b.x, a.y - b.y); if (pinch) A.goal.r = Math.max(5, Math.min(24, A.goal.r*pinch/Math.max(20, d))); pinch = d; hide(); }
+  });
+  const up = e => { P.delete(e.pointerId); pinch = null; };
+  ac.addEventListener('pointerup', up); ac.addEventListener('pointercancel', up);
+  ac.addEventListener('wheel', e => { e.preventDefault(); A.goal.r = Math.max(5, Math.min(24, A.goal.r*(e.deltaY > 0 ? 1.1 : 0.9))); hide(); }, {passive:false});
+}
+let aLast = 0;
+function aLoop(now){
+  if (!A || !A.running) return;
+  requestAnimationFrame(aLoop);
+  const dt = Math.min(0.05, (now - (aLast || now))/1000); aLast = now;
+  if (!reduce && now - A.idle > 5000) A.goal.th += dt*0.18;
+  const c = A.ctl, g = A.goal, k = 1 - Math.pow(0.002, dt);
+  c.th += (g.th - c.th)*k; c.ph += (g.ph - c.ph)*k; c.r += (g.r - c.r)*k;
+  const ty = (A.height || 1.4)*0.42;
+  A.cam.position.set(Math.sin(c.th)*Math.sin(c.ph)*c.r, ty + Math.cos(c.ph)*c.r, Math.cos(c.th)*Math.sin(c.ph)*c.r);
+  A.cam.lookAt(0, ty, 0);
+  // keep the car in the free space next to the panel
+  const pn = $('aPanel'), w = ac.clientWidth, h = ac.clientHeight, wide = w > 760;
+  const off = wide && pn && !pn.hidden ? Math.round((pn.offsetWidth + 16)/2) : 0, vk = w + 'x' + h + ':' + off;
+  if (vk !== A.vk){ A.vk = vk; if (off) A.cam.setViewOffset(w, h, off, 0, w, h); else A.cam.clearViewOffset(); }
+  const t = (now - A.t0)/1000, vis = A.vis0 ? Math.min(1, (now - A.vis0)/900) : 1;
+  for (const m of A.mats){ m.uniforms.uTime.value = t; m.uniforms.uVis.value = vis; }
+  if (A.chg){   // charging: light runs from the ring into the car
+    const n = A.bPos.length/6, h = (A.height || 1.4)*0.55;
+    for (let i = 0; i < n; i++){
+      const a = i/n*Math.PI*2, ph = (t*0.7 + i*0.37) % 1, r0 = 3.6, x = Math.cos(a)*r0, z = Math.sin(a)*r0;
+      const s0 = ph, s1 = Math.min(1, ph + 0.12);
+      const lerp = s => [x*(1 - s)*0.98 + 0, 0.02 + h*s*s, z*(1 - s)*0.98];
+      const p0 = lerp(s0), p1 = lerp(s1); A.bPos.set([...p0, ...p1], i*6);
+    }
+    A.beams.geometry.attributes.position.needsUpdate = true;
+  }
+  A.renderer.render(A.scene, A.cam);
+}
+function carOpen(){
+  carInit(); if (!A) return;
+  carResize(); carLoad(carModelUrl());
+  if (!A.running){ A.running = true; aLast = 0; requestAnimationFrame(aLoop); }
+  carRender(true);
+  if (Date.now() - carDetT > 10*60e3) detectCars();
+}
+function carClose(){ if (A) A.running = false; }
+
+/* ---- panel ---- */
+let aKey = '', aW = [], unlockArm = 0;
+const st = id => id && ST[id] ? ST[id] : null;
+const num = id => { const s = st(id); const v = s ? parseFloat(s.state) : NaN; return isNaN(v) ? null : v; };
+const unit = id => (st(id) && st(id).attributes.unit_of_measurement) || '';
+const onish = id => { const s = st(id); if (!s) return false; const v = String(s.state).toLowerCase(); return dom(id) === 'binary_sensor' || dom(id) === 'switch' ? v === 'on' : /^(charging|on|true|laden|starting|charge)$/.test(v); };
+function minsTxt(id){
+  const s = st(id); if (!s) return null; const v = parseFloat(s.state), u = unit(id);
+  if (isNaN(v)){ const d = Date.parse(s.state); if (!isNaN(d)){ const m = Math.round((d - Date.now())/60e3); return m > 0 ? hm(m) : null; } return null; }
+  const m = u === 'h' ? v*60 : u === 's' ? v/60 : u === 'd' ? v*1440 : v;
+  return m > 0 ? hm(Math.round(m)) : null;
+}
+const hm = m => (m >= 60 ? Math.floor(m/60) + ' u ' : '') + (m % 60) + ' min';
+function carState(R){
+  const chg = R.charging ? onish(R.charging) : (num(R.power) > 0.05);
+  const sh = st(R.shift) && String(st(R.shift).state).toUpperCase();
+  const driving = (sh && /^[DRN]$/.test(sh)) || num(R.speed) > 2;
+  const plugged = R.plug ? onish(R.plug) : false;
+  let txt = chg ? S.t('auto.laden') : driving ? S.t('auto.rijdt') : plugged ? S.t('auto.aangesloten') : S.t('auto.geparkeerd');
+  return {chg, driving, plugged, txt};
+}
+function where(R){
+  const s = st(R.trk); if (!s) return null;
+  if (s.state === 'home') return S.t('auto.thuis'); if (s.state === 'not_home') return S.t('auto.onderweg');
+  return ST['zone.' + s.state] ? (ST['zone.' + s.state].attributes.friendly_name || s.state) : s.state;
+}
+function kv(k, v){ const r = el('div', 'a-kv'); r.append(el('span', null, k), el('b', null, v)); return r; }
+function carRender(force){
+  const pn = $('aPanel'), cars = $('aCars'); if (!pn) return;
+  const car = carNow();
+  // car chips when more than one car is recognised
+  if ((cfg().carLink || 'auto') === 'auto' && CARS.length > 1){
+    if (force || cars.childElementCount !== CARS.length){
+      cars.textContent = ''; CARS.forEach((c, i) => { const b = el('button', null, c.name); b.type = 'button'; b.setAttribute('aria-pressed', String(i === carIdx)); b.addEventListener('click', () => { carIdx = i; aKey = ''; carRender(true); }); cars.append(b); });
+    } else [...cars.children].forEach((b, i) => b.setAttribute('aria-pressed', String(i === carIdx)));
+    cars.hidden = false;
+  } else cars.hidden = true;
+  if (A) carLoad(carModelUrl());
+  const R = car ? carRoles(car.ents) : null;
+  const key = (car ? car.key + '|' + car.ents.join() : 'none') + '|' + (A && A.credit ? A.credit.title : '');
+  if (!force && key === aKey){ aW.forEach(f => f()); return; }
+  aKey = key; aW = []; pn.textContent = ''; pn.hidden = false;
+  const credit = A && A.credit;
+  if (!car){
+    const k = card((credit && credit.title) || S.t('tab.auto')); pn.append(...k.c.childNodes);
+    pn.append(el('p', 'hp-empty', S.t('auto.alleen_weergave')));
+    if (credit) pn.append(el('div', 'hp-sub a-credit', [credit.author && 'Model: ' + credit.author.replace(/\s*\(.*\)$/, ''), credit.license && credit.license.replace(/\s*\(.*\)$/, '')].filter(Boolean).join(' · ')));
+    carSetRing(null, false); return;
+  }
+  const k = card(car.name, [car.make, car.model].filter(Boolean).join(' ')); pn.append(...k.c.childNodes);
+  const status = el('div', 'hp-sub'); pn.append(status);
+  // big battery / fuel figure
+  const big = el('div', 'a-big'), pct = el('b'), sub = el('span'), bar = el('i', 'a-bar'), fillB = el('em');
+  bar.append(fillB); big.append(pct, sub, bar); pn.append(big);
+  const rows = el('div', 'a-rows'); pn.append(rows);
+  const addRow = (label, fn) => { const r = kv(label, ''); rows.append(r); const b = r.querySelector('b'); aW.push(() => { const v = fn(); r.hidden = v == null || v === ''; b.textContent = v == null ? '' : v; }); };
+  const n0 = (id, d = 0) => { const v = num(id); return v == null ? null : nfmt(v, d) + (unit(id) ? ' ' + unit(id) : ''); };
+  addRow(S.t('auto.locatie'), () => where(R));
+  if (R.soc) addRow(S.t('auto.bereik'), () => n0(R.range) || n0(R.fuelRange));
+  else addRow(S.t('auto.bereik'), () => n0(R.fuelRange) || n0(R.range));
+  addRow(S.t('auto.laadlimiet'), () => n0(R.limit));
+  addRow(S.t('auto.laadvermogen'), () => carState(R).chg ? n0(R.power, 1) : null);
+  addRow(S.t('auto.tot_vol'), () => carState(R).chg ? minsTxt(R.tfull) : null);
+  addRow(S.t('auto.binnen'), () => R.tin ? n0(R.tin, 1) : (R.clim && st(R.clim) && st(R.clim).attributes.current_temperature != null ? nfmt(st(R.clim).attributes.current_temperature, 1) + ' °C' : null));
+  addRow(S.t('auto.buiten'), () => n0(R.tout, 1));
+  addRow(S.t('auto.km_stand'), () => n0(R.odo));
+  addRow(S.t('auto.vergrendeld'), () => R.lock && st(R.lock) ? (st(R.lock).state === 'locked' ? S.t('auto.ja') : S.t('auto.open')) : null);
+  addRow(S.t('auto.deuren'), () => { if (!R.open.length) return null; const o = R.open.filter(onish); return o.length ? o.map(id => nameOf(id).replace(new RegExp('^' + car.name + '\\s*', 'i'), '')).join(', ') : S.t('auto.alles_dicht'); });
+  addRow(S.t('auto.banden'), () => { const v = R.tyres.map(num).filter(x => x != null); return v.length ? v.map(x => nfmt(x, 1)).join(' · ') + ' ' + unit(R.tyres[0]) : null; });
+  // controls
+  const btns = el('div', 'hbtns a-btns'); const sec = el('div', 'hp-sec', S.t('auto.bediening'));
+  const mk = (label, fn, isOn) => { const b = el('button', 'hbtn', label); b.type = 'button'; b.addEventListener('click', fn); btns.append(b); if (isOn) aW.push(() => b.classList.toggle('on', !!isOn())); return b; };
+  if (R.lock){
+    const b = mk(S.t('auto.ontgrendel'), () => {
+      const locked = st(R.lock) && st(R.lock).state === 'locked';
+      if (!locked){ call('lock', 'lock', {entity_id:R.lock}); return; }
+      if (Date.now() - unlockArm > 4000){ unlockArm = Date.now(); b.textContent = S.t('auto.zeker'); setTimeout(() => aW.forEach(f => f()), 4100); return; }
+      unlockArm = 0; call('lock', 'unlock', {entity_id:R.lock});
+    });
+    aW.push(() => { if (Date.now() - unlockArm > 4000) b.textContent = st(R.lock) && st(R.lock).state === 'locked' ? S.t('auto.ontgrendel') : S.t('auto.vergrendel'); });
+  }
+  if (R.clim) mk(S.t('auto.klimaat'), () => { const on = st(R.clim) && st(R.clim).state !== 'off'; call('climate', on ? 'turn_off' : 'turn_on', {entity_id:R.clim}); }, () => st(R.clim) && st(R.clim).state !== 'off');
+  if (R.chgSw) mk(S.t('auto.laden'), () => call('switch', onish(R.chgSw) ? 'turn_off' : 'turn_on', {entity_id:R.chgSw}), () => onish(R.chgSw));
+  if (R.port) mk(S.t('auto.laadklep'), () => call('cover', st(R.port) && st(R.port).state === 'open' ? 'close_cover' : 'open_cover', {entity_id:R.port}), () => st(R.port) && st(R.port).state === 'open');
+  if (R.sentry) mk(S.t('auto.wacht'), () => call('switch', onish(R.sentry) ? 'turn_off' : 'turn_on', {entity_id:R.sentry}), () => onish(R.sentry));
+  if (R.limit){
+    const step = d => { const s = st(R.limit); if (!s) return; const a = s.attributes, v = Math.max(a.min ?? 50, Math.min(a.max ?? 100, (parseFloat(s.state) || 80) + d*(a.step && a.step >= 5 ? a.step : 5))); call('number', 'set_value', {entity_id:R.limit, value:v}); optimistic(R.limit, {state:String(v)}); };
+    mk(S.t('auto.laadlimiet') + ' −', () => step(-1)); mk(S.t('auto.laadlimiet') + ' +', () => step(1));
+  }
+  for (const id of R.btns) mk(/(honk|horn)/.test(obj(id)) ? S.t('auto.toeter') : /wake/.test(obj(id)) ? S.t('auto.wakker') : S.t('auto.knipper'), () => call('button', 'press', {entity_id:id}));
+  if (btns.childElementCount){ pn.append(sec, btns); }
+  if (credit) pn.append(el('div', 'hp-sub a-credit', 'Model: ' + [credit.title, credit.author && credit.author.replace(/\s*\(.*\)$/, ''), credit.license && credit.license.replace(/\s*\(.*\)$/, '')].filter(Boolean).join(' · ')));
+  aW.push(() => {
+    const s = carState(R), soc = num(R.soc), fuel = num(R.fuel), v = soc != null ? soc : fuel;
+    status.textContent = s.txt + (where(R) ? ' · ' + where(R) : '');
+    pct.textContent = v == null ? '–' : nfmt(v, 0) + '%';
+    sub.textContent = soc != null ? S.t('auto.accu') : fuel != null ? S.t('auto.brandstof') : '';
+    big.hidden = v == null; fillB.style.width = (v || 0) + '%'; big.classList.toggle('low', v != null && v < 20); big.classList.toggle('chg', s.chg);
+    carSetRing(soc != null ? soc : fuel, s.chg);
+  });
+  aW.forEach(f => f());
+}
+listeners.add(() => { if (S.view === 'auto') carRender(false); });
+window.addEventListener('lumen-config', () => { carOptions(); carVis(); if (A && S.view === 'auto') carRender(true); });
+(function carBoot(){
+  // wait for Home Assistant, then look for a car; again every 30 minutes
+  const go = () => { if (DEMO || S.ha) detectCars(); else setTimeout(go, 1500); };
+  carVis(); setTimeout(go, 2500); setInterval(() => { if (DEMO || S.ha) detectCars(); }, 30*60e3);
+})();
+S.cars = () => CARS; S.carOpen = carOpen; S.carClose = carClose;
+})();
+
 })();
 </script>
 </body>

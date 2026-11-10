@@ -36,6 +36,10 @@ screen for your house: climate, lights, energy, media and cameras.
 - **Huis**: your house as a 3D hologram with live room status, per floor. An example house is
   included, so you can see it working straight away; swap in your own model when you have one
   (see [The 3D house](#the-3d-house)).
+- **Auto**: your car as a hologram with battery or fuel level, range, charging (power, time to
+  full, charge limit), location, lock, climate, doors and tyres, plus lock, climate, charging,
+  charge port and sentry buttons. The tab appears by itself when Home Assistant has a car
+  (see [The car](#the-car)).
 - **Bediening**: climate, lights per room, switches, and an **energy** page with a live flow
   diagram (solar, grid, battery, gas, water), history per day, week, month and year, solar
   forecast, costs and savings.
@@ -133,6 +137,25 @@ To use **your own house**, put the `.glb` in `/config/www/` and enter `/local/my
 The example house uses generic names such as `light.kitchen` and `climate.living_room`; rooms
 and devices whose entity is not in your Home Assistant just show no status.
 
+### The car
+
+The **Auto** tab only shows when Lumen finds a car in Home Assistant, or when you choose a car
+model yourself.
+
+- **Recognised cars**: Tesla (Tesla Fleet, Teslemetry, Tessie, Tesla custom), Kia/Hyundai
+  (Kia Connect / Bluelink), BMW, Mercedes, Volvo, Renault, Nissan Leaf, VW/Skoda/Audi/Cupra,
+  Polestar, Toyota, Mazda, Subaru, Ford, Smartcar, Stellantis/Peugeot, MG, Porsche, Jaguar/Land
+  Rover, BYD, Lynk & Co and Zeekr integrations. A car whose entities are named like
+  `sensor.<car>_battery_level` or `sensor.<car>_fuel_level` (with a range or odometer sensor) is
+  found too. Lumen only shows what your car offers.
+- **Car model**: `car.glb`, an example car, is included and used for a recognised car. Put your
+  own model in `/config/www/` and enter `/local/my_car.glb` under **Instellingen › Automodel**.
+  Large models from Sketchfab are best simplified first (for example with
+  [gltfpack](https://meshoptimizer.org/gltf/) `-si 0.05`); textures are not needed.
+- **Display only**: choose a car model with **Auto koppelen › Geen koppeling** (or without a
+  recognised car) and the tab shows just the hologram, without any link to Home Assistant.
+- Unlocking needs a second tap within 4 seconds.
+
 ## Face editor (shape keys)
 
 [`tools/gezicht-editor.html`](tools/gezicht-editor.html) is a stand-alone page: download it and
@@ -191,6 +214,10 @@ praten en het te bedienen (klimaat, verlichting, energie, media, camera's).
 **Installeren:** HACS › ⋮ › Aangepaste repositories › `https://github.com/Endless1977/Lumen` (type
 Integratie) › Lumen installeren › Home Assistant herstarten › Instellingen › Apparaten & diensten ›
 Integratie toevoegen › Lumen. Lumen staat daarna in de zijbalk. Een token is niet nodig.
+
+**Auto:** het blad Auto verschijnt vanzelf als Home Assistant een auto kent (Tesla, Kia/Hyundai, BMW,
+VW, …). Kies bij Instellingen › Automodel een eigen model (`/local/mijn_auto.glb`); met Auto koppelen ›
+Geen koppeling krijg je alleen de weergave.
 
 **Huis:** een voorbeeldhuis zit erbij en wordt getoond zolang Instellingen › Huismodel leeg is.
 Je eigen model zet je in `/config/www/` en vul je in als `/local/mijn_huis.glb`.
