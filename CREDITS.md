@@ -1,7 +1,7 @@
 # Credits
 
-Lumen's code is MIT licensed (see LICENSE). The 3D model below is **not** covered by that
-license; it keeps its own CC BY 4.0 license.
+Lumen's code is MIT licensed (see LICENSE). The 3D models below are **not** covered by that
+license; they keep their own CC BY 4.0 licenses.
 
 ## 3D model
 
@@ -12,6 +12,14 @@ license; it keeps its own CC BY 4.0 license.
 - License: Creative Commons Attribution 4.0 International (CC BY 4.0), https://creativecommons.org/licenses/by/4.0/
 - Changes: converted to GLB with the three.js GLTFExporter. The credit is stored in the file
   (`asset.extras`) and shown by Lumen under the model.
+
+`custom_components/lumen/www/car.glb` (example car for the Auto tab)
+
+- **"Hyundai I10 2009"** by **teenlin3**
+- Source: https://sketchfab.com/3d-models/hyundai-i10-2009-895ec00fe5024a2d847eaa112f87c826
+- License: Creative Commons Attribution 4.0 International (CC BY 4.0), https://creativecommons.org/licenses/by/4.0/
+- Changes: textures removed and the mesh simplified (about 75,000 triangles) with gltfpack. The
+  credit is stored in the file (`asset.extras`) and shown by Lumen in the Auto tab.
 
 ## Libraries and fonts (bundled in `custom_components/lumen/www/vendor/`)
 
