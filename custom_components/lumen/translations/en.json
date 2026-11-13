@@ -13,10 +13,12 @@
           "voice": "Voice variant (optional, e.g. nl_NL-ronnie-medium)",
           "stt": "Speech recognition (empty = the browser's own)",
           "lang": "Language (nl, nl-BE, en …)",
-          "place": "Home town (for local news, optional)"
+          "place": "Home town (for local news, optional)",
+          "notify": "Notify service for car reminders (optional, e.g. notify.mobile_app_phone)"
         },
         "data_description": {
-          "agent": "Used by every screen that has no conversation agent of its own set in Lumen's settings. The same goes for voice, speech recognition and language."
+          "agent": "Used by every screen that has no conversation agent of its own set in Lumen's settings. The same goes for voice, speech recognition and language.",
+          "notify": "APK and maintenance reminders always appear as a notification in Home Assistant and on Lumen; with a notify service they also go to your phone."
         }
       }
     },
@@ -39,12 +41,46 @@
           "voice": "Voice variant (optional, e.g. nl_NL-ronnie-medium)",
           "stt": "Speech recognition (empty = the browser's own)",
           "lang": "Language (nl, nl-BE, en …)",
-          "place": "Home town (for local news, optional)"
+          "place": "Home town (for local news, optional)",
+          "notify": "Notify service for car reminders (optional, e.g. notify.mobile_app_phone)"
         },
         "data_description": {
-          "agent": "Used by every screen that has no conversation agent of its own set in Lumen's settings. The same goes for voice, speech recognition and language."
+          "agent": "Used by every screen that has no conversation agent of its own set in Lumen's settings. The same goes for voice, speech recognition and language.",
+          "notify": "APK and maintenance reminders always appear as a notification in Home Assistant and on Lumen; with a notify service they also go to your phone."
         }
       }
+    }
+  },
+  "services": {
+    "auto_tankbeurt": {
+      "name": "Car: add refuelling",
+      "description": "Adds a refuelling for the car without an integration of its own and updates its odometer. Consumption is worked out from the distance between refuellings.",
+      "fields": {
+        "datum": {
+          "name": "Date",
+          "description": "Day of the refuelling (empty = today)."
+        },
+        "km": {
+          "name": "Odometer",
+          "description": "Odometer reading at this refuelling."
+        },
+        "liters": {
+          "name": "Litres",
+          "description": "Litres filled up."
+        },
+        "prijs": {
+          "name": "Price",
+          "description": "Total price (optional)."
+        }
+      }
+    },
+    "auto_tankbeurt_verwijderen": {
+      "name": "Car: remove last refuelling",
+      "description": "Removes the refuelling with the highest odometer reading."
+    },
+    "auto_rdw_ophalen": {
+      "name": "Car: look up at the RDW",
+      "description": "Looks the licence plate up again in the RDW open data (make, model, APK date, fuel)."
     }
   }
 }

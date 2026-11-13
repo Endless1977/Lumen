@@ -156,6 +156,22 @@ model yourself.
   recognised car) and the tab shows just the hologram, without any link to Home Assistant.
 - Unlocking needs a second tap within 4 seconds.
 
+**A car without a connection** (an older car, or one Home Assistant cannot reach) can still get
+its own data on the Auto tab. The integration keeps it, no extra files needed:
+
+- **Licence plate**: Dutch plates are looked up in the RDW open data (make, model, fuel,
+  factory consumption and the APK date), again every night.
+- **Odometer and refuelling**: enter date, odometer, litres and price on the Auto tab; Lumen
+  works out the consumption (last and average, l/100 km).
+- **Maintenance**: last service (date and odometer) and the interval in km and months.
+- **Reminders** for the APK and maintenance (30, 14, 7, 3 and 1 days before, and 500 km before):
+  as a notification in Home Assistant, on Lumen's screen, the event `lumen_auto_herinnering`,
+  and on your phone if you fill in a notify service in the integration's options.
+- Entities: `sensor.lumen_auto` (all data as attributes), `text.lumen_auto_kenteken`,
+  `number.lumen_auto_km_stand`, `number.lumen_auto_onderhoud_*`, `date.lumen_auto_onderhoud_laatst`,
+  `date.lumen_auto_apk_handmatig`. Services: `lumen.auto_tankbeurt`,
+  `lumen.auto_tankbeurt_verwijderen` and `lumen.auto_rdw_ophalen`.
+
 ## Face editor (shape keys)
 
 [`tools/gezicht-editor.html`](tools/gezicht-editor.html) is a stand-alone page: download it and
@@ -217,7 +233,8 @@ Integratie toevoegen › Lumen. Lumen staat daarna in de zijbalk. Een token is n
 
 **Auto:** het blad Auto verschijnt vanzelf als Home Assistant een auto kent (Tesla, Kia/Hyundai, BMW,
 VW, …). Kies bij Instellingen › Automodel een eigen model (`/local/mijn_auto.glb`); met Auto koppelen ›
-Geen koppeling krijg je alleen de weergave.
+Geen koppeling krijg je alleen de weergave. Voor een auto zonder verbinding houdt Lumen zelf kenteken
+(met RDW-gegevens), km-stand, tankbeurten en onderhoud bij, met herinneringen voor APK en onderhoud.
 
 **Huis:** een voorbeeldhuis zit erbij en wordt getoond zolang Instellingen › Huismodel leeg is.
 Je eigen model zet je in `/config/www/` en vul je in als `/local/mijn_huis.glb`.
