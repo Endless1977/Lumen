@@ -1,7 +1,7 @@
 """Constants for the Lumen integration."""
 
 DOMAIN = "lumen"
-VERSION = "2026.11.10"
+VERSION = "2026.11.13"
 
 # Where the page and the bundled model are served from (same origin as Home Assistant,
 # so Lumen can use the existing Home Assistant login and needs no access token).
@@ -17,6 +17,10 @@ CONF_VOICE = "voice"
 CONF_STT = "stt"
 CONF_LANG = "lang"
 CONF_PLACE = "place"
+CONF_NOTIFY = "notify"
+
+# the car without an integration of its own (licence plate, refuelling, maintenance)
+PLATFORMS = ["sensor", "text", "number", "date"]
 
 DEFAULT_TITLE = "Lumen"
 DEFAULT_ICON = "mdi:face-recognition"

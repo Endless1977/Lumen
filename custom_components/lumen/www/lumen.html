@@ -7,19 +7,25 @@
 <script>
 /* ---------- always the newest version, also inside the Home Assistant dashboard ----------
    Home Assistant lets browsers cache /local/ files for a long time. On every start this page asks
-   the server for its current copy (bypassing the cache) and reloads itself when the version differs. */
+   the server for its current copy (bypassing the cache) and reloads itself when the version differs.
+   Also re-checked every 10 min (10 nov) - a wall-mounted tablet that's never manually reloaded
+   would otherwise keep running a stale, already-fixed bug indefinitely. */
 (function(){
-  const LUMEN_VERSION='2026-10-30e';
+  const LUMEN_VERSION='2026-11-13b';
   window.LUMEN_VERSION=LUMEN_VERSION;
   if(!/^https?:$/.test(location.protocol)) return;
-  const url=new URL(location.href);
-  url.searchParams.delete('v'); url.searchParams.set('check',Date.now());
-  fetch(url.toString(),{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>{
-    const m=t.match(/LUMEN_VERSION='([^']+)'/);
-    if(!m || m[1]===LUMEN_VERSION) return;
-    const go=new URL(location.href); go.searchParams.set('v',m[1]);
-    if(go.toString()!==location.href) location.replace(go.toString());
-  }).catch(()=>{});
+  function check(){
+    const url=new URL(location.href);
+    url.searchParams.delete('v'); url.searchParams.set('check',Date.now());
+    fetch(url.toString(),{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>{
+      const m=t.match(/LUMEN_VERSION='([^']+)'/);
+      if(!m || m[1]===LUMEN_VERSION) return;
+      const go=new URL(location.href); go.searchParams.set('v',m[1]);
+      if(go.toString()!==location.href) location.replace(go.toString());
+    }).catch(()=>{});
+  }
+  check();
+  setInterval(check, 10*60*1000);
 })();
 </script>
 
@@ -373,6 +379,10 @@ textarea::placeholder{color:var(--mute)}
 .floors button[aria-pressed=true]{color:var(--ink);border-color:var(--laser);background:color-mix(in srgb,var(--laser) 18%,var(--void));box-shadow:0 0 14px color-mix(in srgb,var(--laser) 25%,transparent)}
 .hstat{position:absolute;z-index:2;left:16px;bottom:16px;max-width:calc(100% - 140px);display:flex;flex-wrap:wrap;gap:4px 14px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);pointer-events:none}
 .hstat b{color:var(--laser);font-weight:500}
+.hopacity{position:absolute;z-index:2;right:16px;bottom:16px;display:flex;flex-direction:column;gap:4px;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+.hopc-row{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.hopc-row label{min-width:5.5em;text-align:right}
+.hopacity input[type=range]{width:90px;accent-color:var(--laser)}
 .hhelp{position:absolute;z-index:2;left:50%;top:66px;transform:translateX(-50%);margin:0;font-family:var(--mono);font-size:11px;color:var(--mute);white-space:nowrap;pointer-events:none;transition:opacity 1s}
 .hmsg{position:absolute;z-index:3;left:16px;right:16px;top:45%;margin:0 auto;max-width:56ch;text-align:center;font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--amber)}
 .hpanel{position:absolute;z-index:3;right:16px;top:64px;max-height:calc(100% - 80px);width:min(370px,calc(100% - 32px));overflow-y:auto;overscroll-behavior:contain}
@@ -394,10 +404,19 @@ textarea::placeholder{color:var(--mute)}
 .a-kv span{color:var(--mute)} .a-kv b{font-weight:500;text-align:right}
 .a-btns{padding:2px 14px 14px}
 .a-credit{padding-top:6px;font-size:10.5px;opacity:.75}
+.a-warn{color:var(--amber)} .a-alert{color:#ff3b46;font-weight:600}
+.a-kv input[type=text]{background:var(--void);border:1px solid var(--line);border-radius:3px;color:var(--ink);font-size:14px;padding:3px 8px;text-align:right;width:140px}
+.a-tankform{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px}
+.a-tankform input{background:var(--void);border:1px solid var(--line);border-radius:3px;color:var(--ink);font-size:13px;padding:5px 7px;width:92px}
+.a-tanklijst{padding:0 14px 10px;font-size:12px;color:var(--mute);font-family:var(--mono)}
+.a-tankrij{padding:2px 0}
 @media (max-width:760px){
   .floors{top:auto;bottom:70px;transform:none;grid-auto-flow:column;left:8px;right:8px;justify-content:center}
   .floors button{min-width:0;padding:8px 9px}
   .hstat{display:none}
+  .hopacity{right:8px;bottom:8px}
+  .hopc-row label{min-width:0}
+  .hopacity input[type=range]{width:54px}
   .hpanel{top:auto;bottom:8px;right:8px;left:8px;width:auto;max-height:58%}
   .tabs button{padding:8px 11px;letter-spacing:.08em}
 }
@@ -522,6 +541,8 @@ textarea::placeholder{color:var(--mute)}
 .echart{display:block;width:100%;height:120px;padding:0 10px 10px;box-sizing:border-box;cursor:crosshair}
 .setp.mini button{width:36px;height:36px;font-size:18px}
 .setp.mini output{min-width:70px;font-size:16px}
+.setp.mini output.editable{cursor:text;border-bottom:1px dashed color-mix(in srgb,var(--laser) 45%,transparent)}
+.setp.mini input.hnum-edit{min-width:70px;font-size:16px;font-family:var(--display);color:var(--laser);background:var(--void);border:1px solid var(--laser);border-radius:3px;text-align:center;font-variant-numeric:tabular-nums}
 .row input.dt{font-family:var(--mono);font-size:13px;color:var(--ink);background:var(--void);border:1px solid var(--line);border-radius:3px;padding:7px 8px;color-scheme:dark}
 .row.missing .rn{color:var(--mute)}
 .rv.miss{font-style:italic}
@@ -791,6 +812,12 @@ button.cam:focus-visible{outline:2px solid var(--laser);outline-offset:3px}
         <button type="button" data-level="tuin" aria-pressed="false" data-i18n="huis.tuin">Tuin</button>
       </div>
       <p class="hhelp" id="hHelp" data-i18n="huis.hhelp">Sleep om te draaien · knijp om te zoomen · tik op een kamer</p>
+      <div class="hopacity" id="hOpacity">
+        <span class="hopc-row"><label for="hColorRange" data-i18n="huis.kleur_intensiteit">Kleur</label>
+          <input type="range" id="hColorRange" min="0" max="250" step="5" data-i18n-attr="aria-label:huis.kleur_intensiteit" aria-label="Kleurintensiteit"></span>
+        <span class="hopc-row"><label for="hWireRange" data-i18n="huis.wireframe_intensiteit">Draadmodel</label>
+          <input type="range" id="hWireRange" min="20" max="250" step="5" data-i18n-attr="aria-label:huis.wireframe_intensiteit" aria-label="Draadmodelintensiteit"></span>
+      </div>
       <div class="hstat" id="hStat"></div>
       <aside class="hpanel holo" id="hPanel" hidden aria-live="polite"></aside>
       <p class="hmsg" id="hMsg" hidden></p>
@@ -897,7 +924,7 @@ button.cam:focus-visible{outline:2px solid var(--laser);outline-offset:3px}
       <label for="cfgSpeaker" data-i18n="cfg.spreker">Spreker (optioneel, bij stemmen met meerdere sprekers)</label><input id="cfgSpeaker" placeholder="3798" inputmode="numeric">
       <label for="cfgTrim" data-i18n="cfg.trim">Begin van de stem overslaan (milliseconden, tegen geruis)</label><input id="cfgTrim" type="number" min="0" max="1000" step="10" placeholder="0">
       <label for="cfgStt" data-i18n="cfg.stt">Spraakherkenning (STT-entiteit, leeg = browser)</label><input id="cfgStt" placeholder="stt.faster_whisper">
-      <label for="cfgModels" data-i18n="cfg.modellen">3D-modellen (komma-gescheiden; eigen modellen in config/www als /local/naam.glb)</label><input id="cfgModels" placeholder="girl_bust.glb, /local/mijn_model.glb">
+      <label for="cfgModels" data-i18n="cfg.modellen">3D-modellen (bestanden in config/www, komma-gescheiden)</label><input id="cfgModels" placeholder="girl_bust.glb, sitting_blue_cat.glb">
       <label for="cfgMp" data-i18n="cfg.gezichtsherkenning">Gezichtsherkenning-bestanden (leeg = meegeleverd)</label><input id="cfgMp" placeholder="vendor/mediapipe">
       <label for="cfgPlace">Woonplaats (voor lokaal nieuws, optioneel)</label><input id="cfgPlace" placeholder="Utrecht">
       <label for="cfgLang" data-i18n="cfg.taal_spraak">Taal (nl = Nederland; nl-BE = Vlaams)</label><input id="cfgLang" placeholder="nl">
@@ -910,7 +937,7 @@ button.cam:focus-visible{outline:2px solid var(--laser);outline-offset:3px}
       </select>
       <label for="cfgEnt" data-i18n="cfg.entiteiten_paneel">Apparaten in het paneel</label><input id="cfgEnt" placeholder="climate.woonkamer, light.keuken">
       <label for="cfgChSolar" data-i18n="cfg.grafiek_zon">Grafiek zonnepanelen (entiteit, leeg = zelf zoeken)</label><input id="cfgChSolar" placeholder="sensor.zonnepanelen_vermogen">
-      <label for="cfgChBatt" data-i18n="cfg.grafiek_accu">Grafiek thuisaccu (entiteit)</label><input id="cfgChBatt" placeholder="sensor.thuisaccu_percentage">
+      <label for="cfgChBatt" data-i18n="cfg.grafiek_accu">Grafiek thuisaccu (entiteit)</label><input id="cfgChBatt" placeholder="sensor.home_battery_level">
       <label for="cfgChIn" data-i18n="cfg.binnenklimaat">Binnenklimaat (woonkamer, slaapkamer, keuken; plus gemiddelde)</label><input id="cfgChIn" placeholder="climate.woonkamer, climate.slaapkamer">
       <label for="cfgChOut" data-i18n="cfg.buitentemp">Buitentemperatuur (KNMI-sensor)</label><input id="cfgChOut" placeholder="sensor.knmi_buitentemperatuur">
       <label for="cfgStations" data-i18n="cfg.radiozenders">Radiozenders (één per regel: naam | adres)</label><textarea id="cfgStations" rows="5"></textarea>
@@ -920,7 +947,7 @@ button.cam:focus-visible{outline:2px solid var(--laser);outline-offset:3px}
       <label for="cfgRooms" data-i18n="cfg.kamers_koppelen">Kamers koppelen (één per regel: kamer = entiteiten)</label><textarea id="cfgRooms" rows="4"></textarea>
       <label for="cfgPi" data-i18n="cfg.pi_status">Pi-status: CPU, temperatuur, geheugen, SSD (4 sensoren, leeg = zelf zoeken)</label><input id="cfgPi" placeholder="sensor.system_monitor_processor_use, …">
       <label for="cfgCctv" data-i18n="cfg.cctv_map">Opnames CCTV: map in de mediabrowser (leeg = Frigate)</label><input id="cfgCctv" placeholder="media-source://frigate">
-      <label for="cfgHide" data-i18n="cfg.verbergen">Verbergen in Bediening (komma-gescheiden, * mag)</label><input id="cfgHide" placeholder="switch.*_led, switch.melcloud_*">
+      <label for="cfgHide" data-i18n="cfg.verbergen">Verbergen in Bediening (komma-gescheiden, * mag)</label><input id="cfgHide" placeholder="switch.*_led, switch.*_display">
       <label class="toggle"><input type="checkbox" id="cfgBrowserMod"> <span data-i18n="cfg.browser_mod">Browser Mod op dit scherm (camerabeeld + scherm/volume op afstand in HA)</span></label>
       <button type="button" class="cfgaction" id="calibBtn" data-i18n="cfg.calib_knop">Ogen &amp; mond van het huidige model instellen</button>
       <button class="send" type="submit" data-i18n="algemeen.opslaan">Opslaan</button>
@@ -1714,8 +1741,8 @@ const log=$('log'), form=$('form'), msg=$('msg'), send=$('send'), stop=$('stop')
 /* ---------- settings (kept in this browser only) ---------- */
 const DEF = { base: location.protocol.startsWith('http') ? location.origin : 'http://localhost:8123',
   token:'', agent:'', tts:'', voice:'', speaker:'', trim:'', chSolar:'', chBatt:'', chIn:'', chOut:'sensor.knmi_buitentemperatuur',
-  stations:'NPO Radio 1 | https://icecast.omroep.nl/radio1-bb-mp3\nNPO Radio 2 | https://icecast.omroep.nl/radio2-bb-mp3\nNPO 3FM | https://icecast.omroep.nl/3fm-bb-mp3\nNPO Klassiek | https://icecast.omroep.nl/radio4-bb-mp3', stt:'', models:'girl_bust.glb', mpBase:'', lang:'nl', uiLang:'nl', entities:'', place:'',
-  house:'', carModel:'', carLink:'auto', pi:'', cctvRoot:'', rooms:'', hide:'',
+  stations:'NPO Radio 1 | https://icecast.omroep.nl/radio1-bb-mp3\nNPO Radio 2 | https://icecast.omroep.nl/radio2-bb-mp3\nNPO 3FM | https://icecast.omroep.nl/3fm-bb-mp3\nNPO Klassiek | https://icecast.omroep.nl/radio4-bb-mp3', stt:'', models:'girl_bust.glb', mpBase:'', place:'', lang:'nl', uiLang:'nl', entities:'',
+  house:'', pi:'', carModel:'', carLink:'auto', cctvRoot:'', rooms:'', hide:'',
   // Instellingen-blad (Bediening > Instellingen): leeg = val terug op de
   // ingebouwde standaardwaarden (zie roomName()/camName()/alarmCamList()
   // in het Huis/CCTV-script-blok) - zo blijft deze installatie werken zonder
@@ -1729,8 +1756,8 @@ const DEF = { base: location.protocol.startsWith('http') ? location.origin : 'ht
   browserMod:false };
 let C = {...DEF};
 try{ Object.assign(C, JSON.parse(localStorage.getItem('lumen-ha')||'{}')); }catch(e){}
-for(const k of ['house','rooms']) if(C[k]==null) C[k]=DEF[k];
 try{ const q=new URLSearchParams(location.search); for(const k of ['agent','tts','voice','stt','lang','place']){ const v=q.get(k); if(v && !C[k]) C[k]=v; } }catch(e){}
+for(const k of ['house','rooms']) if(C[k]==null) C[k]=DEF[k];
 const F = { base:$('cfgBase'), token:$('cfgToken'), agent:$('cfgAgent'), tts:$('cfgTts'), voice:$('cfgVoice'), speaker:$('cfgSpeaker'), trim:$('cfgTrim'), chSolar:$('cfgChSolar'), chBatt:$('cfgChBatt'), chIn:$('cfgChIn'), chOut:$('cfgChOut'), stations:$('cfgStations'), stt:$('cfgStt'), models:$('cfgModels'), mpBase:$('cfgMp'), lang:$('cfgLang'), place:$('cfgPlace'), uiLang:$('cfgUiLang'), entities:$('cfgEnt'), house:$('cfgHouse'), carModel:$('cfgCarModel'), carLink:$('cfgCarLink'), pi:$('cfgPi'), cctvRoot:$('cfgCctv'), rooms:$('cfgRooms'), hide:$('cfgHide') };
 function fillCfg(){ for(const k in F) F[k].value=C[k]||''; if(F.carLink && !F.carLink.value) F.carLink.value='auto'; $('cfgBrowserMod').checked=!!C.browserMod; }
 fillCfg();
@@ -1753,6 +1780,7 @@ const I18N = {
   nl: {
     'tab.lumen':'Lumen', 'tab.huis':'Huis', 'tab.bediening':'Bediening', 'tab.media':'Media', 'tab.cctv':'CCTV', 'tab.weergave':'Weergave en model',
     "tab.auto":"Auto", "auto.hhelp":"Sleep om te draaien · knijp om te zoomen", "auto.canvas_label":"3D-hologram van de auto. Sleep om te draaien, knijp om te zoomen.", "auto.alleen_weergave":"Alleen weergave: deze auto is niet gekoppeld aan Home Assistant.", "auto.model_niet_geladen":"Het automodel kon niet laden ({url}). Kijk bij Instellingen › Automodel.", "auto.laden":"Laden", "auto.rijdt":"Rijdt", "auto.aangesloten":"Aangesloten", "auto.geparkeerd":"Geparkeerd", "auto.thuis":"thuis", "auto.onderweg":"onderweg", "auto.accu":"Accu", "auto.brandstof":"Brandstof", "auto.bereik":"Actieradius", "auto.laadlimiet":"Laadlimiet", "auto.tot_vol":"Tot vol", "auto.laadvermogen":"Laadvermogen", "auto.km_stand":"Kilometerstand", "auto.binnen":"Binnen", "auto.buiten":"Buiten", "auto.locatie":"Locatie", "auto.deuren":"Deuren en ramen", "auto.alles_dicht":"alles dicht", "auto.banden":"Banden", "auto.vergrendeld":"Vergrendeld", "auto.open":"nee", "auto.ja":"ja", "auto.vergrendel":"Vergrendelen", "auto.ontgrendel":"Ontgrendelen", "auto.zeker":"Tik nog een keer om te ontgrendelen", "auto.klimaat":"Klimaat", "auto.laadklep":"Laadklep", "auto.wacht":"Wachtmodus", "auto.knipper":"Lichten knipperen", "auto.toeter":"Toeteren", "auto.wakker":"Wakker maken", "auto.bediening":"Bediening", "cfg.automodel":"Automodel (3D, voor het blad Auto; leeg = voorbeeldauto bij een gekoppelde auto)", "cfg.autokoppeling":"Auto koppelen", "cfg.auto_automatisch":"Automatisch (herkende auto)", "cfg.auto_geen":"Geen koppeling (alleen weergave)",
+    "auto.mijn_gegevens":"Mijn gegevens", "auto.kenteken":"Kenteken", "auto.kenteken_placeholder":"bijv. AB-123-C", "auto.merk_model":"Merk & model", "auto.apk":"APK", "auto.apk_verlopen":"verlopen", "auto.dagen":"dagen", "auto.brandstof_type":"Brandstof", "auto.tanken_registreren":"Tanken registreren", "auto.liters":"Liter", "auto.prijs_optioneel":"Prijs (optioneel)", "auto.tanken_opslaan":"Opslaan", "auto.tanken_fout_velden":"Vul datum, km-stand en liters in.", "auto.tanken_opgeslagen":"Tankbeurt opgeslagen.", "auto.verbruik":"Verbruik", "auto.laatste":"Laatste", "auto.gemiddeld":"Gemiddeld", "auto.onderhoud":"Onderhoud", "auto.onderhoud_volgende":"Volgende beurt", "auto.onderhoud_laatst_datum":"Laatste onderhoud (datum)", "auto.onderhoud_laatst_km":"Laatste onderhoud (km-stand)", "auto.onderhoud_interval_km":"Onderhoudsinterval (km)", "auto.onderhoud_interval_maanden":"Onderhoudsinterval (maanden)", "auto.apk_handmatig":"APK-datum (handmatig, als RDW niets geeft)",
     'ctl.klimaat':'Klimaat', 'ctl.licht':'Verlichting', 'ctl.energie':'Energie', 'ctl.overig':'Overig', 'ctl.instellingen':'Instellingen',
     'cfg.uilang':'Schermtaal', 'cfg.ha_adres':'Home Assistant-adres', 'cfg.token':'Langlevend toegangstoken (leeg = je HA-login gebruiken)',
     'cfg.agent':'Gespreksagent (leeg = standaard)', 'cfg.tts':'Stem (TTS-entiteit, leeg = browserstem)', 'cfg.stemvariant':'Stemvariant (optioneel)',
@@ -1778,6 +1806,7 @@ const I18N = {
     'hud.projectie':'Projectie', 'hud.vlakken':'Vlakken', 'hud.status':'Status', 'hud.camera':'Camera', 'hud.modus':'Modus',
     'huis.overzicht':'Overzicht', 'huis.begane_grond':'Begane grond', 'huis.eerste_verdieping':'1e verdieping', 'huis.zolder':'Zolder', 'huis.tuin':'Tuin',
     'huis.hhelp':'Sleep om te draaien · knijp om te zoomen · tik op een kamer', 'huis.verdieping':'Verdieping', 'huis.buiten':'Buiten',
+    'huis.kleur_intensiteit':'Kleur', 'huis.wireframe_intensiteit':'Draadmodel',
     'huis.canvas_label':'3D-hologram van het huis. Sleep om te draaien, knijp om te zoomen, tik op een kamer.',
     'huis.binnen':'Binnen', 'huis.lampen_aan':'Lampen aan', 'huis.beweging':'Beweging', 'huis.ruimte_in_ha':'ruimte in HA',
     'huis.nog_niet_gekoppeld':'Nog niet gekoppeld aan Home Assistant.',
@@ -1788,7 +1817,8 @@ const I18N = {
     'hvac.uit':'Uit', 'hvac.verwarmen':'Verwarmen', 'hvac.koelen':'Koelen', 'hvac.auto':'Auto', 'hvac.drogen':'Drogen', 'hvac.ventilator':'Ventilator',
     'hvac.actie_verwarmt':'verwarmt', 'hvac.actie_koelt':'koelt', 'hvac.actie_rust':'rust', 'hvac.actie_uit':'uit', 'hvac.actie_droogt':'droogt',
     'hvac.actie_ventileert':'ventileert', 'hvac.actie_warmt_voor':'warmt voor',
-    'klimaat.nu':'Nu', 'klimaat.ingesteld':'Ingesteld', 'klimaat.stand':'Stand', 'algemeen.lager':'Lager', 'algemeen.hoger':'Hoger',
+    'klimaat.nu':'Nu', 'klimaat.ingesteld':'Ingesteld', 'klimaat.stand':'Stand', 'klimaat.vane':'Vane-richting', 'algemeen.lager':'Lager', 'algemeen.hoger':'Hoger',
+    'algemeen.tik_om_in_te_vullen':'Tik om een waarde in te vullen',
     'algemeen.niet_bereikbaar':'niet bereikbaar', 'licht.helderheid':'Helderheid', 'licht.nb':'n.b.',
     'overig.schakelaars':'Schakelaars', 'overig.ventilatie':'Ventilatie', 'overig.zonwering':'Zonwering & rolluiken',
     'overig.sloten':'Sloten', 'overig.scenes':'Scènes', 'overig.scripts':'Scripts',
@@ -1870,6 +1900,7 @@ const I18N = {
     'energie.kosten_vandaag':'Kosten vandaag', 'energie.kosten_maand':'Kosten deze maand', 'energie.vorige_maand':'Vorige maand',
     'energie.verwarmen_gas_of_airco':'Verwarmen: gas of airco?', 'energie.gas_ketel':'Gas (ketel)', 'energie.airco_warmtepomp':'Airco (warmtepomp)', 'energie.advies_nu':'Advies nu',
     'energie.zon_terugverdiend':'Zonnepanelen terugverdiend', 'energie.accu_terugverdiend':'Thuisaccu terugverdiend', 'energie.zon_accu_terugverdiend':'Zon + accu samen terugverdiend',
+    'energie.airco_terugverdiend':"Airco's terugverdiend", 'energie.totaal_terugverdiend':"Totaal terugverdiend (zon + accu + airco's)",
     'energie.verloop':'Verloop', 'energie.24uur':'24 uur', 'energie.7dagen':'7 dagen', 'energie.regeling':'Regeling',
     'regel.seizoen':'Seizoen', 'regel.seizoen_note':'Winter- of zomerstand. Wisselt vanzelf op het 3-daags buitengemiddelde. Bepaalt onder meer de nachttemperatuur; de warmtebuffer kiest zijn richting zelf (zie hieronder).',
     'regel.slim_besparen':'Slim besparen', 'regel.slim_besparen_note':'Staat altijd aan. Alleen jij kunt hem uitzetten; Home Assistant zet hem nooit zelf uit.',
@@ -1885,7 +1916,8 @@ const I18N = {
     'helper.winter_minimaal':'Winter: minimaal', 'helper.winter_maximaal':'Winter: maximaal', 'helper.zomer_minimaal':'Zomer: minimaal', 'helper.zomer_maximaal':'Zomer: maximaal',
     'helper.extreem_koud':'Extreem koud (winter) vanaf', 'helper.extreem_warm':'Extreem warm (zomer) vanaf',
     'helper.nacht_vloer':'Nacht: nooit kouder dan', 'helper.nacht_plafond':'Nacht: nooit warmer dan', 'helper.accu_marge':'Nacht-uitzondering: accu minstens',
-    'helper.nachtmodus_aan':'Nachtmodus aan', 'helper.begint_om':'Begint om', 'helper.wachttijd':'Wachttijd op antwoord',
+    'helper.airco_vermogen':'Airco vermogen (aanname, verwarmen)',
+    'helper.nachtmodus_aan':'Nachtmodus aan', 'helper.begint_om':'Begint om', 'helper.eindigt_om':'Eindigt om', 'helper.wachttijd':'Wachttijd op antwoord',
     'helper.lampen_uit':'Lampen uit', 'helper.aircos_uit':'Airco\'s uit', 'helper.verwarming_uit':'Verwarming uit (zomer)', 'helper.wintertemperatuur':'Wintertemperatuur',
     'helper.vakantie_aan':'Vakantie aan', 'helper.van':'Van', 'helper.tot_en_met':'Tot en met', 'helper.temperatuur':'Temperatuur', 'helper.lampen_aanwezigheid':'Lampen alsof er iemand is',
     'energie.slim_besparen_confirm':'Slim besparen echt uitzetten?', 'energie.nu_actief':'nu actief', 'energie.nu_niet_actief':'nu niet actief',
@@ -1945,6 +1977,7 @@ const I18N = {
   en: {
     'tab.lumen':'Lumen', 'tab.huis':'House', 'tab.bediening':'Controls', 'tab.media':'Media', 'tab.cctv':'CCTV', 'tab.weergave':'View and model',
     "tab.auto":"Car", "auto.hhelp":"Drag to rotate · pinch to zoom", "auto.canvas_label":"3D hologram of the car. Drag to rotate, pinch to zoom.", "auto.alleen_weergave":"Display only: this car is not linked to Home Assistant.", "auto.model_niet_geladen":"The car model could not be loaded ({url}). Check Settings › Car model.", "auto.laden":"Charging", "auto.rijdt":"Driving", "auto.aangesloten":"Plugged in", "auto.geparkeerd":"Parked", "auto.thuis":"home", "auto.onderweg":"away", "auto.accu":"Battery", "auto.brandstof":"Fuel", "auto.bereik":"Range", "auto.laadlimiet":"Charge limit", "auto.tot_vol":"Until full", "auto.laadvermogen":"Charging power", "auto.km_stand":"Odometer", "auto.binnen":"Inside", "auto.buiten":"Outside", "auto.locatie":"Location", "auto.deuren":"Doors and windows", "auto.alles_dicht":"all closed", "auto.banden":"Tyres", "auto.vergrendeld":"Locked", "auto.open":"no", "auto.ja":"yes", "auto.vergrendel":"Lock", "auto.ontgrendel":"Unlock", "auto.zeker":"Tap again to unlock", "auto.klimaat":"Climate", "auto.laadklep":"Charge port", "auto.wacht":"Sentry mode", "auto.knipper":"Flash lights", "auto.toeter":"Honk", "auto.wakker":"Wake up", "auto.bediening":"Controls", "cfg.automodel":"Car model (3D, for the Car tab; empty = example car for a linked car)", "cfg.autokoppeling":"Link car", "cfg.auto_automatisch":"Automatic (recognised car)", "cfg.auto_geen":"No link (display only)",
+    "auto.mijn_gegevens":"My data", "auto.kenteken":"Licence plate", "auto.kenteken_placeholder":"e.g. AB-123-C", "auto.merk_model":"Make & model", "auto.apk":"APK (NL inspection)", "auto.apk_verlopen":"expired", "auto.dagen":"days", "auto.brandstof_type":"Fuel type", "auto.tanken_registreren":"Log a fill-up", "auto.liters":"Litres", "auto.prijs_optioneel":"Price (optional)", "auto.tanken_opslaan":"Save", "auto.tanken_fout_velden":"Enter date, mileage and litres.", "auto.tanken_opgeslagen":"Fill-up saved.", "auto.verbruik":"Consumption", "auto.laatste":"Last", "auto.gemiddeld":"Average", "auto.onderhoud":"Maintenance", "auto.onderhoud_volgende":"Next service", "auto.onderhoud_laatst_datum":"Last service (date)", "auto.onderhoud_laatst_km":"Last service (mileage)", "auto.onderhoud_interval_km":"Service interval (km)", "auto.onderhoud_interval_maanden":"Service interval (months)", "auto.apk_handmatig":"APK date (manual, if RDW has none)",
     'ctl.klimaat':'Climate', 'ctl.licht':'Lighting', 'ctl.energie':'Energy', 'ctl.overig':'Other', 'ctl.instellingen':'Settings',
     'cfg.uilang':'Display language', 'cfg.ha_adres':'Home Assistant address', 'cfg.token':'Long-lived access token (empty = use your HA login)',
     'cfg.agent':'Conversation agent (empty = default)', 'cfg.tts':'Voice (TTS entity, empty = browser voice)', 'cfg.stemvariant':'Voice variant (optional)',
@@ -1970,6 +2003,7 @@ const I18N = {
     'hud.projectie':'Projection', 'hud.vlakken':'Faces', 'hud.status':'Status', 'hud.camera':'Camera', 'hud.modus':'Mode',
     'huis.overzicht':'Overview', 'huis.begane_grond':'Ground floor', 'huis.eerste_verdieping':'1st floor', 'huis.zolder':'Attic', 'huis.tuin':'Garden',
     'huis.hhelp':'Drag to rotate · pinch to zoom · tap a room', 'huis.verdieping':'Floor', 'huis.buiten':'Outside',
+    'huis.kleur_intensiteit':'Color', 'huis.wireframe_intensiteit':'Wireframe',
     'huis.canvas_label':'3D hologram of the house. Drag to rotate, pinch to zoom, tap a room.',
     'huis.binnen':'Indoor', 'huis.lampen_aan':'Lights on', 'huis.beweging':'Motion', 'huis.ruimte_in_ha':'HA room',
     'huis.nog_niet_gekoppeld':'Not yet linked to Home Assistant.',
@@ -1980,7 +2014,8 @@ const I18N = {
     'hvac.uit':'Off', 'hvac.verwarmen':'Heat', 'hvac.koelen':'Cool', 'hvac.auto':'Auto', 'hvac.drogen':'Dry', 'hvac.ventilator':'Fan',
     'hvac.actie_verwarmt':'heating', 'hvac.actie_koelt':'cooling', 'hvac.actie_rust':'idle', 'hvac.actie_uit':'off', 'hvac.actie_droogt':'drying',
     'hvac.actie_ventileert':'fanning', 'hvac.actie_warmt_voor':'preheating',
-    'klimaat.nu':'Now', 'klimaat.ingesteld':'Set to', 'klimaat.stand':'Mode', 'algemeen.lager':'Lower', 'algemeen.hoger':'Higher',
+    'klimaat.nu':'Now', 'klimaat.ingesteld':'Set to', 'klimaat.stand':'Mode', 'klimaat.vane':'Vane direction', 'algemeen.lager':'Lower', 'algemeen.hoger':'Higher',
+    'algemeen.tik_om_in_te_vullen':'Tap to type a value',
     'algemeen.niet_bereikbaar':'unreachable', 'licht.helderheid':'Brightness', 'licht.nb':'n/a',
     'overig.schakelaars':'Switches', 'overig.ventilatie':'Ventilation', 'overig.zonwering':'Blinds & shutters',
     'overig.sloten':'Locks', 'overig.scenes':'Scenes', 'overig.scripts':'Scripts',
@@ -2062,6 +2097,7 @@ const I18N = {
     'energie.kosten_vandaag':'Cost today', 'energie.kosten_maand':'Cost this month', 'energie.vorige_maand':'Last month',
     'energie.verwarmen_gas_of_airco':'Heating: gas or AC?', 'energie.gas_ketel':'Gas (boiler)', 'energie.airco_warmtepomp':'AC (heat pump)', 'energie.advies_nu':'Advice now',
     'energie.zon_terugverdiend':'Solar panels paid back', 'energie.accu_terugverdiend':'Home battery paid back', 'energie.zon_accu_terugverdiend':'Solar + battery combined paid back',
+    'energie.airco_terugverdiend':'ACs paid back', 'energie.totaal_terugverdiend':'Total paid back (solar + battery + ACs)',
     'energie.verloop':'Trend', 'energie.24uur':'24 hours', 'energie.7dagen':'7 days', 'energie.regeling':'Control',
     'regel.seizoen':'Season', 'regel.seizoen_note':'Winter or summer setting. Switches automatically based on the 3-day outdoor average. Determines, among other things, the night temperature; the heat buffer picks its own direction (see below).',
     'regel.slim_besparen':'Smart saving', 'regel.slim_besparen_note':'Always on. Only you can turn it off; Home Assistant never turns it off itself.',
@@ -2077,7 +2113,8 @@ const I18N = {
     'helper.winter_minimaal':'Winter: minimum', 'helper.winter_maximaal':'Winter: maximum', 'helper.zomer_minimaal':'Summer: minimum', 'helper.zomer_maximaal':'Summer: maximum',
     'helper.extreem_koud':'Extremely cold (winter) from', 'helper.extreem_warm':'Extremely warm (summer) from',
     'helper.nacht_vloer':'Night: never colder than', 'helper.nacht_plafond':'Night: never warmer than', 'helper.accu_marge':'Night exception: battery at least',
-    'helper.nachtmodus_aan':'Night mode on', 'helper.begint_om':'Starts at', 'helper.wachttijd':'Response wait time',
+    'helper.airco_vermogen':'AC power (assumed, heating)',
+    'helper.nachtmodus_aan':'Night mode on', 'helper.begint_om':'Starts at', 'helper.eindigt_om':'Ends at', 'helper.wachttijd':'Response wait time',
     'helper.lampen_uit':'Lights off', 'helper.aircos_uit':'ACs off', 'helper.verwarming_uit':'Heating off (summer)', 'helper.wintertemperatuur':'Winter temperature',
     'helper.vakantie_aan':'Vacation on', 'helper.van':'From', 'helper.tot_en_met':'Through', 'helper.temperatuur':'Temperature', 'helper.lampen_aanwezigheid':'Lights as if someone\'s home',
     'energie.slim_besparen_confirm':'Really turn off smart saving?', 'energie.nu_actief':'active now', 'energie.nu_niet_actief':'not active now',
@@ -2137,6 +2174,7 @@ const I18N = {
   de: {
     'tab.lumen':'Lumen', 'tab.huis':'Haus', 'tab.bediening':'Bedienung', 'tab.media':'Medien', 'tab.cctv':'CCTV', 'tab.weergave':'Ansicht und Modell',
     "tab.auto":"Auto", "auto.hhelp":"Ziehen zum Drehen · zum Zoomen zusammenziehen", "auto.canvas_label":"3D-Hologramm des Autos. Ziehen zum Drehen, zusammenziehen zum Zoomen.", "auto.alleen_weergave":"Nur Anzeige: dieses Auto ist nicht mit Home Assistant verknüpft.", "auto.model_niet_geladen":"Das Automodell konnte nicht geladen werden ({url}). Siehe Einstellungen › Automodell.", "auto.laden":"Lädt", "auto.rijdt":"Fährt", "auto.aangesloten":"Angeschlossen", "auto.geparkeerd":"Geparkt", "auto.thuis":"zu Hause", "auto.onderweg":"unterwegs", "auto.accu":"Akku", "auto.brandstof":"Kraftstoff", "auto.bereik":"Reichweite", "auto.laadlimiet":"Ladelimit", "auto.tot_vol":"Bis voll", "auto.laadvermogen":"Ladeleistung", "auto.km_stand":"Kilometerstand", "auto.binnen":"Innen", "auto.buiten":"Außen", "auto.locatie":"Standort", "auto.deuren":"Türen und Fenster", "auto.alles_dicht":"alles zu", "auto.banden":"Reifen", "auto.vergrendeld":"Verriegelt", "auto.open":"nein", "auto.ja":"ja", "auto.vergrendel":"Verriegeln", "auto.ontgrendel":"Entriegeln", "auto.zeker":"Zum Entriegeln noch einmal tippen", "auto.klimaat":"Klima", "auto.laadklep":"Ladeklappe", "auto.wacht":"Wächtermodus", "auto.knipper":"Lichthupe", "auto.toeter":"Hupen", "auto.wakker":"Aufwecken", "auto.bediening":"Bedienung", "cfg.automodel":"Automodell (3D, für die Registerkarte Auto; leer = Beispielauto bei einem verknüpften Auto)", "cfg.autokoppeling":"Auto verknüpfen", "cfg.auto_automatisch":"Automatisch (erkanntes Auto)", "cfg.auto_geen":"Keine Verknüpfung (nur Anzeige)",
+    "auto.mijn_gegevens":"Meine Daten", "auto.kenteken":"Kennzeichen", "auto.kenteken_placeholder":"z. B. AB-123-C", "auto.merk_model":"Marke & Modell", "auto.apk":"APK (NL-TÜV)", "auto.apk_verlopen":"abgelaufen", "auto.dagen":"Tage", "auto.brandstof_type":"Kraftstoffart", "auto.tanken_registreren":"Tanken erfassen", "auto.liters":"Liter", "auto.prijs_optioneel":"Preis (optional)", "auto.tanken_opslaan":"Speichern", "auto.tanken_fout_velden":"Datum, Kilometerstand und Liter eingeben.", "auto.tanken_opgeslagen":"Tankfüllung gespeichert.", "auto.verbruik":"Verbrauch", "auto.laatste":"Letzter", "auto.gemiddeld":"Durchschnitt", "auto.onderhoud":"Wartung", "auto.onderhoud_volgende":"Nächster Service", "auto.onderhoud_laatst_datum":"Letzter Service (Datum)", "auto.onderhoud_laatst_km":"Letzter Service (Kilometerstand)", "auto.onderhoud_interval_km":"Serviceintervall (km)", "auto.onderhoud_interval_maanden":"Serviceintervall (Monate)", "auto.apk_handmatig":"APK-Datum (manuell, falls RDW keine liefert)",
     'ctl.klimaat':'Klima', 'ctl.licht':'Beleuchtung', 'ctl.energie':'Energie', 'ctl.overig':'Sonstiges', 'ctl.instellingen':'Einstellungen',
     'cfg.uilang':'Anzeigesprache', 'cfg.ha_adres':'Home Assistant-Adresse', 'cfg.token':'Langlebiges Zugriffstoken (leer = deinen HA-Login verwenden)',
     'cfg.agent':'Gesprächsagent (leer = Standard)', 'cfg.tts':'Stimme (TTS-Entität, leer = Browserstimme)', 'cfg.stemvariant':'Stimmvariante (optional)',
@@ -2166,6 +2204,7 @@ const I18N = {
     'hud.projectie':'Projektion', 'hud.vlakken':'Flächen', 'hud.status':'Status', 'hud.camera':'Kamera', 'hud.modus':'Modus',
     'huis.overzicht':'Übersicht', 'huis.begane_grond':'Erdgeschoss', 'huis.eerste_verdieping':'1. Stock', 'huis.zolder':'Dachboden', 'huis.tuin':'Garten',
     'huis.hhelp':'Ziehen zum Drehen · zum Zoomen zusammenziehen · auf einen Raum tippen', 'huis.verdieping':'Stockwerk', 'huis.buiten':'Draußen',
+    'huis.kleur_intensiteit':'Farbe', 'huis.wireframe_intensiteit':'Drahtmodell',
     'huis.canvas_label':'3D-Hologramm des Hauses. Ziehen zum Drehen, zum Zoomen zusammenziehen, auf einen Raum tippen.', 'huis.binnen':'Drinnen',
     'huis.lampen_aan':'Lampen an', 'huis.beweging':'Bewegung', 'huis.ruimte_in_ha':'Raum in HA',
     'huis.nog_niet_gekoppeld':'Noch nicht mit Home Assistant verknüpft.', 'huis.geen_3d_bibliotheek':'3D-Bibliothek nicht geladen.',
@@ -2175,7 +2214,8 @@ const I18N = {
     'algemeen.aan':'An', 'hvac.uit':'Aus', 'hvac.verwarmen':'Heizen', 'hvac.koelen':'Kühlen', 'hvac.auto':'Auto', 'hvac.drogen':'Trocknen',
     'hvac.ventilator':'Ventilator', 'hvac.actie_verwarmt':'heizt', 'hvac.actie_koelt':'kühlt', 'hvac.actie_rust':'ruht', 'hvac.actie_uit':'aus',
     'hvac.actie_droogt':'trocknet', 'hvac.actie_ventileert':'lüftet', 'hvac.actie_warmt_voor':'heizt vor',
-    'klimaat.nu':'Jetzt', 'klimaat.ingesteld':'Eingestellt', 'klimaat.stand':'Modus', 'algemeen.lager':'Niedriger', 'algemeen.hoger':'Höher',
+    'klimaat.nu':'Jetzt', 'klimaat.ingesteld':'Eingestellt', 'klimaat.stand':'Modus', 'klimaat.vane':'Vane-Richtung', 'algemeen.lager':'Niedriger', 'algemeen.hoger':'Höher',
+    'algemeen.tik_om_in_te_vullen':'Tippen, um einen Wert einzugeben',
     'algemeen.niet_bereikbaar':'nicht erreichbar',
     'licht.helderheid':'Helligkeit', 'licht.nb':'k.A.',
     'overig.schakelaars':'Schalter', 'overig.ventilatie':'Lüftung', 'overig.zonwering':'Sonnenschutz & Rollläden', 'overig.sloten':'Schlösser',
@@ -2270,7 +2310,9 @@ const I18N = {
     'energie.verwarmen_gas_of_airco':'Heizen: Gas oder Klimaanlage?', 'energie.gas_ketel':'Gas (Kessel)',
     'energie.airco_warmtepomp':'Klimaanlage (Wärmepumpe)', 'energie.advies_nu':'Rat jetzt',
     'energie.zon_terugverdiend':'Solarpanels zurückverdient', 'energie.accu_terugverdiend':'Hausbatterie zurückverdient',
-    'energie.zon_accu_terugverdiend':'Solar + Batterie zusammen zurückverdient', 'energie.verloop':'Verlauf', 'energie.24uur':'24 Stunden',
+    'energie.zon_accu_terugverdiend':'Solar + Batterie zusammen zurückverdient',
+    'energie.airco_terugverdiend':'Klimaanlagen zurückverdient', 'energie.totaal_terugverdiend':'Insgesamt zurückverdient (Solar + Batterie + Klimaanlagen)',
+    'energie.verloop':'Verlauf', 'energie.24uur':'24 Stunden',
     'energie.7dagen':'7 Tage', 'energie.regeling':'Regelung',
     'regel.seizoen':'Jahreszeit',
     'regel.seizoen_note':'Winter- oder Sommermodus. Wechselt automatisch anhand des 3-Tage-Außendurchschnitts. Bestimmt unter anderem die Nachttemperatur; der Wärmepuffer wählt seine Richtung selbst (siehe unten).',
@@ -2288,7 +2330,7 @@ const I18N = {
     'helper.winter_minimaal':'Winter: minimal', 'helper.winter_maximaal':'Winter: maximal', 'helper.zomer_minimaal':'Sommer: minimal',
     'helper.zomer_maximaal':'Sommer: maximal', 'helper.extreem_koud':'Extrem kalt (Winter) ab', 'helper.extreem_warm':'Extrem warm (Sommer) ab',
     'helper.nacht_vloer':'Nacht: nie kälter als', 'helper.nacht_plafond':'Nacht: nie wärmer als',
-    'helper.accu_marge':'Nachtausnahme: Batterie mindestens', 'helper.nachtmodus_aan':'Nachtmodus an', 'helper.begint_om':'Beginnt um',
+    'helper.accu_marge':'Nachtausnahme: Batterie mindestens', 'helper.airco_vermogen':'Klimaanlage Leistung (Annahme, Heizen)', 'helper.nachtmodus_aan':'Nachtmodus an', 'helper.begint_om':'Beginnt um', 'helper.eindigt_om':'Endet um',
     'helper.wachttijd':'Wartezeit auf Antwort', 'helper.lampen_uit':'Lampen aus', 'helper.aircos_uit':'Klimaanlagen aus',
     'helper.verwarming_uit':'Heizung aus (Sommer)', 'helper.wintertemperatuur':'Wintertemperatur', 'helper.vakantie_aan':'Urlaub an',
     'helper.van':'Von', 'helper.tot_en_met':'Bis einschließlich', 'helper.temperatuur':'Temperatur',
@@ -2354,6 +2396,7 @@ const I18N = {
   fr: {
     'tab.lumen':'Lumen', 'tab.huis':'Maison', 'tab.bediening':'Commandes', 'tab.media':'Médias', 'tab.cctv':'CCTV', 'tab.weergave':'Affichage et modèle',
     "tab.auto":"Voiture", "auto.hhelp":"Faites glisser pour tourner · pincez pour zoomer", "auto.canvas_label":"Hologramme 3D de la voiture. Faites glisser pour tourner, pincez pour zoomer.", "auto.alleen_weergave":"Affichage seul : cette voiture n'est pas reliée à Home Assistant.", "auto.model_niet_geladen":"Le modèle de voiture n'a pas pu être chargé ({url}). Voir Paramètres › Modèle de voiture.", "auto.laden":"En charge", "auto.rijdt":"En route", "auto.aangesloten":"Branchée", "auto.geparkeerd":"Garée", "auto.thuis":"à la maison", "auto.onderweg":"en déplacement", "auto.accu":"Batterie", "auto.brandstof":"Carburant", "auto.bereik":"Autonomie", "auto.laadlimiet":"Limite de charge", "auto.tot_vol":"Avant plein", "auto.laadvermogen":"Puissance de charge", "auto.km_stand":"Kilométrage", "auto.binnen":"Intérieur", "auto.buiten":"Extérieur", "auto.locatie":"Position", "auto.deuren":"Portes et vitres", "auto.alles_dicht":"tout fermé", "auto.banden":"Pneus", "auto.vergrendeld":"Verrouillée", "auto.open":"non", "auto.ja":"oui", "auto.vergrendel":"Verrouiller", "auto.ontgrendel":"Déverrouiller", "auto.zeker":"Touchez encore pour déverrouiller", "auto.klimaat":"Climatisation", "auto.laadklep":"Trappe de charge", "auto.wacht":"Mode sentinelle", "auto.knipper":"Appel de phares", "auto.toeter":"Klaxon", "auto.wakker":"Réveiller", "auto.bediening":"Commandes", "cfg.automodel":"Modèle de voiture (3D, pour l'onglet Voiture ; vide = voiture d'exemple pour une voiture reliée)", "cfg.autokoppeling":"Relier la voiture", "cfg.auto_automatisch":"Automatique (voiture reconnue)", "cfg.auto_geen":"Aucun lien (affichage seul)",
+    "auto.mijn_gegevens":"Mes données", "auto.kenteken":"Plaque d'immatriculation", "auto.kenteken_placeholder":"p. ex. AB-123-C", "auto.merk_model":"Marque et modèle", "auto.apk":"Contrôle technique (NL)", "auto.apk_verlopen":"expiré", "auto.dagen":"jours", "auto.brandstof_type":"Carburant", "auto.tanken_registreren":"Enregistrer un plein", "auto.liters":"Litres", "auto.prijs_optioneel":"Prix (facultatif)", "auto.tanken_opslaan":"Enregistrer", "auto.tanken_fout_velden":"Indiquez la date, le kilométrage et les litres.", "auto.tanken_opgeslagen":"Plein enregistré.", "auto.verbruik":"Consommation", "auto.laatste":"Dernier", "auto.gemiddeld":"Moyenne", "auto.onderhoud":"Entretien", "auto.onderhoud_volgende":"Prochain entretien", "auto.onderhoud_laatst_datum":"Dernier entretien (date)", "auto.onderhoud_laatst_km":"Dernier entretien (kilométrage)", "auto.onderhoud_interval_km":"Intervalle d'entretien (km)", "auto.onderhoud_interval_maanden":"Intervalle d'entretien (mois)", "auto.apk_handmatig":"Date du contrôle technique (manuelle, si RDW n'en fournit pas)",
     'ctl.klimaat':'Climat', 'ctl.licht':'Éclairage', 'ctl.energie':'Énergie', 'ctl.overig':'Autre', 'ctl.instellingen':'Paramètres',
     'cfg.uilang':"Langue d'affichage", 'cfg.ha_adres':'Adresse Home Assistant',
     'cfg.token':"Jeton d'accès longue durée (vide = utiliser votre connexion HA)",
@@ -2389,6 +2432,7 @@ const I18N = {
     'hud.projectie':'Projection', 'hud.vlakken':'Faces', 'hud.status':'État', 'hud.camera':'Caméra', 'hud.modus':'Mode',
     'huis.overzicht':"Vue d'ensemble", 'huis.begane_grond':'Rez-de-chaussée', 'huis.eerste_verdieping':'1er étage', 'huis.zolder':'Grenier',
     'huis.tuin':'Jardin', 'huis.hhelp':'Faites glisser pour tourner · pincez pour zoomer · touchez une pièce', 'huis.verdieping':'Étage',
+    'huis.kleur_intensiteit':'Couleur', 'huis.wireframe_intensiteit':'Fil de fer',
     'huis.buiten':'Extérieur',
     'huis.canvas_label':"Hologramme 3D de la maison. Faites glisser pour tourner, pincez pour zoomer, touchez une pièce.",
     'huis.binnen':'Intérieur', 'huis.lampen_aan':'Lampes allumées', 'huis.beweging':'Mouvement', 'huis.ruimte_in_ha':'pièce dans HA',
@@ -2400,7 +2444,8 @@ const I18N = {
     'hvac.drogen':'Déshumidifier', 'hvac.ventilator':'Ventilateur', 'hvac.actie_verwarmt':'chauffe', 'hvac.actie_koelt':'refroidit',
     'hvac.actie_rust':'repos', 'hvac.actie_uit':'éteint', 'hvac.actie_droogt':'déshumidifie', 'hvac.actie_ventileert':'ventile',
     'hvac.actie_warmt_voor':'préchauffe',
-    'klimaat.nu':'Maintenant', 'klimaat.ingesteld':'Réglé', 'klimaat.stand':'Mode', 'algemeen.lager':'Plus bas', 'algemeen.hoger':'Plus haut',
+    'klimaat.nu':'Maintenant', 'klimaat.ingesteld':'Réglé', 'klimaat.stand':'Mode', 'klimaat.vane':'Orientation de la vanne', 'algemeen.lager':'Plus bas', 'algemeen.hoger':'Plus haut',
+    'algemeen.tik_om_in_te_vullen':'Toucher pour saisir une valeur',
     'algemeen.niet_bereikbaar':'inaccessible',
     'licht.helderheid':'Luminosité', 'licht.nb':'n.d.',
     'overig.schakelaars':'Interrupteurs', 'overig.ventilatie':'Ventilation', 'overig.zonwering':'Pare-soleil & volets',
@@ -2499,7 +2544,9 @@ const I18N = {
     'energie.verwarmen_gas_of_airco':'Chauffage : gaz ou climatisation ?', 'energie.gas_ketel':'Gaz (chaudière)',
     'energie.airco_warmtepomp':'Climatisation (pompe à chaleur)', 'energie.advies_nu':'Conseil actuel',
     'energie.zon_terugverdiend':'Panneaux solaires rentabilisés', 'energie.accu_terugverdiend':'Batterie domestique rentabilisée',
-    'energie.zon_accu_terugverdiend':'Solaire + batterie ensemble rentabilisés', 'energie.verloop':'Évolution',
+    'energie.zon_accu_terugverdiend':'Solaire + batterie ensemble rentabilisés',
+    'energie.airco_terugverdiend':'Climatiseurs rentabilisés', 'energie.totaal_terugverdiend':'Total rentabilisé (solaire + batterie + climatiseurs)',
+    'energie.verloop':'Évolution',
     'energie.24uur':'24 heures', 'energie.7dagen':'7 jours', 'energie.regeling':'Régulation',
     'regel.seizoen':'Saison',
     'regel.seizoen_note':'Mode hiver ou été. Change automatiquement selon la moyenne extérieure sur 3 jours. Détermine entre autres la température nocturne ; le tampon thermique choisit sa propre direction (voir ci-dessous).',
@@ -2519,8 +2566,8 @@ const I18N = {
     'helper.zomer_minimaal':'Été : minimum', 'helper.zomer_maximaal':'Été : maximum',
     'helper.extreem_koud':'Extrêmement froid (hiver) à partir de', 'helper.extreem_warm':'Extrêmement chaud (été) à partir de',
     'helper.nacht_vloer':'Nuit : jamais plus froid que', 'helper.nacht_plafond':'Nuit : jamais plus chaud que',
-    'helper.accu_marge':'Exception nocturne : batterie au moins', 'helper.nachtmodus_aan':'Mode nuit activé',
-    'helper.begint_om':'Commence à', 'helper.wachttijd':'Délai d\'attente de réponse', 'helper.lampen_uit':'Lampes éteintes',
+    'helper.accu_marge':'Exception nocturne : batterie au moins', 'helper.airco_vermogen':'Puissance climatiseur (hypothèse, chauffage)', 'helper.nachtmodus_aan':'Mode nuit activé',
+    'helper.begint_om':'Commence à', 'helper.eindigt_om':'Se termine à', 'helper.wachttijd':'Délai d\'attente de réponse', 'helper.lampen_uit':'Lampes éteintes',
     'helper.aircos_uit':'Climatisations éteintes', 'helper.verwarming_uit':'Chauffage éteint (été)',
     'helper.wintertemperatuur':'Température hivernale', 'helper.vakantie_aan':'Vacances activées', 'helper.van':'De',
     'helper.tot_en_met':"Jusqu'au", 'helper.temperatuur':'Température', 'helper.lampen_aanwezigheid':"Lampes comme si quelqu'un était présent",
@@ -3211,7 +3258,7 @@ async function listenAgainLater(){
    Home Assistant drives three helpers (made by the HA setup):
      input_select.lumen_modus   normaal | waarschuwing | alarm
      input_text.lumen_melding   "<time>|<sentence to say>"   (a new value = a new announcement)
-     input_text.lumen_camera    camera entity to show during a warning (e.g. camera.garden) */
+     input_text.lumen_camera    camera entity to show during a warning (e.g. camera.achtertuin) */
 const GB=$('guardBar'), GT=$('guardTitle'), GX=$('guardText'), GI=$('guardImg'), GOK=$('guardOk'), GAL=$('guardAlarm');
 const G={modus:'normaal', lastMsg:null, text:'', cam:'', imgUrl:null, snapBusy:false};
 async function haState(id){ try{ return await ha('/api/states/'+id); }catch(e){ return null; } }
@@ -4164,6 +4211,17 @@ function card(title, sub){
   h.append(h3, sm); c.append(h);
   return {c, h, h3, sm};
 }
+// Vane-richting (10 nov): per airco de bijpassende select.*_vane-entiteit
+// (ESPHome cn105 vertical_vane_select) - alleen de airco's hebben er een,
+// de CV-thermostaat (tstat_...) niet. Moet in DIT script-blok staan (niet
+// bij ROOM_FALLBACK, een eind hierboven) - top-level const/let van het ene
+// <script>-blok is onzichtbaar in een volgend blok (geen ReferenceError bij
+// het parsen, pas bij gebruik), en climateBody/climateCard leven in dit
+// blok. Dat was de echte oorzaak van de lege Klimaat-tab vandaag.
+// the vane select that belongs to an air conditioner: the select.*vane* entity whose name matches it best
+const VANE_OF = new Proxy({}, {get:(_, id) => { const o = String(id).split('.')[1] || ''; let best, bl = 0;
+  for (const e of Object.keys(ST)){ if (!/^select\..*vane/.test(e)) continue; const n = e.split('.')[1]; let i = 0; while (i < n.length && i < o.length && n[i] === o[i]) i++; if (i > bl){ bl = i; best = e; } }
+  return bl >= 4 ? best : undefined; }});
 function climateBody(id){
   const box = el('div', 'clim');
   const now = el('div', 'clim-now');
@@ -4174,6 +4232,12 @@ function climateBody(id){
   sp.append(minus, out, plus); right.append(capT, sp); now.append(left, right);
   const chips = el('div', 'chips'); chips.setAttribute('role', 'group'); chips.setAttribute('aria-label', S.t('klimaat.stand'));
   box.append(now, chips);
+  const vaneId = VANE_OF[id];
+  let vane = null, vaneOptKey = '';
+  if (vaneId){
+    vane = el('div', 'chips vane'); vane.setAttribute('role', 'group'); vane.setAttribute('aria-label', S.t('klimaat.vane'));
+    box.append(vane);
+  }
   let want = null, wantT = null, modesKey = '';
   const target = () => { const a = (ST[id] || {}).attributes || {}; return want != null ? want : parseFloat(a.temperature); };
   function bump(dir){
@@ -4186,7 +4250,7 @@ function climateBody(id){
   minus.addEventListener('click', () => bump(-1)); plus.addEventListener('click', () => bump(1));
   function upd(){
     const s = ST[id];
-    if (unavailable(s)){ big.innerHTML = '–'; out.textContent = '–'; minus.disabled = plus.disabled = true; chips.textContent = ''; modesKey=''; return; }
+    if (unavailable(s)){ big.innerHTML = '–'; out.textContent = '–'; minus.disabled = plus.disabled = true; chips.textContent = ''; modesKey=''; if (vane) vane.hidden = true; return; }
     const a = s.attributes;
     big.textContent = nfmt(a.current_temperature); big.append(el('i', null, '°C'));
     const t = target(), dual = isNaN(t) && a.target_temp_low != null;
@@ -4203,6 +4267,31 @@ function climateBody(id){
       }
     }
     for (const b of chips.children) b.setAttribute('aria-pressed', String(b.dataset.m === s.state));
+    // try/catch (10 nov): een onverwachte vorm van de vane-select-state (bv.
+    // ontbrekende "options") mag de rest van deze klimaatkaart - en daarmee
+    // van de hele Klimaat-tab, want een throw hier stopte eerder de ctlW-
+    // forEach/bouw-loop voor alle volgende apparaten - niet meer onderuit
+    // kunnen halen.
+    try {
+      if (vane){
+        const vs = ST[vaneId];
+        if (unavailable(vs)){ vane.hidden = true; }
+        else {
+          vane.hidden = false;
+          const opts = vs.attributes.options || [];
+          const optKey = opts.join();
+          if (optKey !== vaneOptKey){
+            vaneOptKey = optKey; vane.textContent = '';
+            for (const o of opts){
+              const b = el('button', 'chip', o); b.type = 'button'; b.dataset.o = o;
+              b.addEventListener('click', () => { call('select', 'select_option', {entity_id:vaneId, option:o}); optimistic(vaneId, {state:o}); });
+              vane.append(b);
+            }
+          }
+          for (const b of vane.children) b.setAttribute('aria-pressed', String(b.dataset.o === vs.state));
+        }
+      }
+    } catch (e) { if (vane) vane.hidden = true; console.error('vane upd failed for', id, e); }
   }
   return {el:box, upd, sub: () => {
     const s = ST[id]; if (unavailable(s)) return [S.t('algemeen.niet_bereikbaar'), ''];
@@ -4372,7 +4461,7 @@ function renderCtl(force){
   if (!Object.keys(ST).length){ body.append(el('p', 'ctl-empty', lastErr || S.t('algemeen.verbinden'))); return; }
   if (ctlTab === 'klimaat'){
     const ids = indoorIds();
-    // climate.woonkamer/slaapkamer/tstat_... -> de bijpassende sleutel in
+    // climate entity -> the matching key in
     // sensor.lumen_klimaat_besluit's attributen (lumen_klimaat_besluit.yaml).
     const BESLUIT_KEY = new Proxy({}, {get:(_, id) => (S.roomName && S.roomName(String(id), 'long')) || String(id).split('.').pop()});
     // Het besluitmodel (HA-kant, Jinja) blijft Nederlandse woorden gebruiken
@@ -4415,7 +4504,10 @@ function renderCtl(force){
       ntBtn.textContent = on ? S.t('klimaat.weer_thuis') : S.t('klimaat.niet_thuis');
     }});
     if (!parts.length) add(el('p', 'ctl-empty', S.t('klimaat.geen_apparaten')));
-    for (const id of parts){ const w = climateCard(id); ctlW.push(w); add(w.el); }
+    for (const id of parts){
+      try { const w = climateCard(id); ctlW.push(w); add(w.el); }
+      catch (e) { console.error('climateCard failed for', id, e); }
+    }
   } else if (ctlTab === 'licht'){
     if (!parts.length) add(el('p', 'ctl-empty', S.t('licht.geen_lampen')));
     for (const [aid, ids] of byArea(parts)){
@@ -4535,9 +4627,23 @@ let H = null;
 const hc = $('hc');
 function hmsg(t){ const m = $('hMsg'); m.textContent = t || ''; m.hidden = !t; }
 const KIND_STYLE = {   // fill alpha, edge alpha, edge angle
-  wall:[.045,.5,25], slab:[.025,.22,25], roof:[.05,.32,25], glass:[.09,0,25], stairs:[.05,.45,25], furniture:[.05,.4,25],
-  plant:[.035,.1,45], fence:[0,.13,30], ground:[.04,.18,25], floor:[.06,.65,25], object:[.3,.95,25]
+  wall_buiten:[.4,.55,25], wall_binnen:[.22,.4,25], slab:[.025,.22,25], roof:[.4,.4,25], glass:[.09,0,25], stairs:[.05,.45,25], furniture:[.05,.4,25],
+  plant:[.55,.15,45], fence:[.3,.3,30], ground:[.3,.25,25], floor:[.06,.65,25], object:[.3,.95,25]
 };
+// Echte kleuren uit het model zelf (geen hologram-laserkleur) voor muren/dak/tuin (10 nov) -
+// "daar valt toch niets te halen, verlichting komt er toch bovenop" / "transparant baksteen/
+// wit met het draadmodel nog zichtbaar" / "de kleuren van het model zelf laten doorschijnen,
+// ook hekwerk, bloemetjes etc." house.glb geeft elke mesh al een eigen, realistische
+// basiskleur (Baksteen, Dakpannen, Gras, Bloem rood/paars/geel, Hekwerk wit, ...) - die lezen
+// we hier direct van het ORIGINELE GLTF-materiaal af, vóór we het door het shader-materiaal
+// vervangen. Alleen deze kinds; vloeren/apparaten/kamers blijven de dynamische laser-/
+// modus-kleur volgen (die hebben hun eigen betekenisvolle kleurcodering, bv. verwarmen/koelen).
+const MODEL_KINDS = new Set(['wall_buiten', 'wall_binnen', 'roof', 'plant', 'fence', 'ground']);
+// v>=0 (niet v>0!) - anders zou een opgeslagen 0% (kleur volledig uit) bij de
+// volgende page-load onterecht terugvallen op de standaard 100%.
+const readAlphaMul = key => { try{ const s = localStorage.getItem(key); const v = s === null ? NaN : +s; return (isNaN(v) || v < 0) ? 1 : v; }catch(e){ return 1; } };
+let colorAlphaMul = readAlphaMul('lumen-color-alpha');
+let wireAlphaMul = readAlphaMul('lumen-wire-alpha');
 function kindOf(m, fp, room, obj){
   const n = (m.name + ' ' + (m.parent ? m.parent.name : '')).toLowerCase();
   if (obj) return 'object';
@@ -4551,7 +4657,10 @@ function kindOf(m, fp, room, obj){
   if (/vloer/.test(n)) return 'slab';
   if (/tuinpad|borders/.test(n)) return 'ground';
   if (/keukenblok|eettafel|bed/.test(n)) return 'furniture';
-  return 'wall';
+  // Buitenmuur (gevel, of de dikke woningscheidende/brandmuur) = baksteen; de rest
+  // (binnenwanden, halwand, knieschotten, zolderwanden) = binnenmuur, transparant wit.
+  if (/gevel|woningscheidende/.test(n)) return 'wall_buiten';
+  return 'wall_binnen';
 }
 const FILL_VS = `varying vec3 vW; varying vec3 vN;
 void main(){ vec4 w=modelMatrix*vec4(position,1.); vW=w.xyz; vN=normalize(mat3(modelMatrix)*normal); gl_Position=projectionMatrix*viewMatrix*w; }`;
@@ -4575,11 +4684,13 @@ void main(){
   float fl=.86+.14*sin(uTime*6.+vW.x*2.3+vW.z*1.7);
   gl_FragColor=vec4(mix(uColor,vec3(1.),band*.7+uHi*.3),(uAlpha*fl+band*.9+uHi*.45)*uVis);
 }`;
-function holoMats(color, fillA, edgeA){
-  const mk = (vs, fs, a) => new THREE.ShaderMaterial({
+function holoMats(color, fillA, edgeA, fillBlend){
+  const mk = (vs, fs, a, blend) => new THREE.ShaderMaterial({
     uniforms:{uColor:{value:color.clone()}, uAlpha:{value:a}, uVis:{value:1}, uCut:{value:-10}, uTime:{value:0}, uHi:{value:0}},
-    vertexShader:vs, fragmentShader:fs, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending, side:THREE.DoubleSide});
-  return {fill: mk(FILL_VS, FILL_FS, fillA), edge: mk(EDGE_VS, EDGE_FS, edgeA)};
+    vertexShader:vs, fragmentShader:fs, transparent:true, depthWrite:false, blending:blend || THREE.AdditiveBlending, side:THREE.DoubleSide});
+  // fill kan NormalBlending krijgen (echte doorzichtige kleur i.p.v. gloed-optelling) -
+  // de rand/draadmodel blijft altijd additive, zodat die er nog steeds doorheen gloeit.
+  return {fill: mk(FILL_VS, FILL_FS, fillA, fillBlend), edge: mk(EDGE_VS, EDGE_FS, edgeA)};
 }
 
 function houseInit(){
@@ -4618,8 +4729,23 @@ function houseInit(){
   } else loader.load(houseUrl(), onLoad, undefined, onErr);
   bindControls();
   $('floors').addEventListener('click', e => { const b = e.target.closest('button[data-level]'); if (b) setLevel(b.dataset.level, true); });
+  const wc = $('hColorRange'); wc.value = String(Math.round(colorAlphaMul * 100));
+  wc.addEventListener('input', () => {
+    colorAlphaMul = (+wc.value) / 100;
+    try{ localStorage.setItem('lumen-color-alpha', String(colorAlphaMul)); }catch(e){}
+    for (const it of H.items) if (MODEL_KINDS.has(it.kind)) it.mats.fill.uniforms.uAlpha.value = KIND_STYLE[it.kind][0] * colorAlphaMul;
+  });
+  const we = $('hWireRange'); we.value = String(Math.round(wireAlphaMul * 100));
+  we.addEventListener('input', () => {
+    wireAlphaMul = (+we.value) / 100;
+    try{ localStorage.setItem('lumen-wire-alpha', String(wireAlphaMul)); }catch(e){}
+    for (const it of H.items) if (MODEL_KINDS.has(it.kind)) it.mats.edge.uniforms.uAlpha.value = KIND_STYLE[it.kind][1] * wireAlphaMul;
+  });
 }
-function houseUrl(){ return cfg().house || 'house.glb'; }
+// ?v=LUMEN_VERSION (10 nov) - zonder cache-buster bleef de browser na een nieuwe
+// house.glb-upload soms de oude, eerder opgehaalde versie van dat bestand tonen
+// (een hard reload van de pagina garandeert geen verse fetch van losse modellen).
+function houseUrl(){ return (cfg().house || 'house.glb') + '?v=' + window.LUMEN_VERSION; }
 
 function houseBuild(gltf){
   const root = gltf.scene; H.scene.add(root); root.updateMatrixWorld(true);
@@ -4643,21 +4769,25 @@ function houseBuild(gltf){
     const kind = kindOf(m, fpOf(m), roomN, objN);
     if (kind === 'skip'){ m.visible = false; continue; }
     const [fa, ea, ang] = KIND_STYLE[kind];
-    const mats = holoMats(H.color, fa, ea);
+    const useModel = MODEL_KINDS.has(kind);
+    // Originele GLTF-materiaalkleur van DEZE mesh lezen vóórdat 'm vervangen wordt.
+    const baseColor = useModel && m.material && m.material.color ? m.material.color.clone() : null;
+    const fillA = useModel ? fa * colorAlphaMul : fa, edgeA = useModel ? ea * wireAlphaMul : ea;
+    const mats = holoMats(baseColor || H.color, fillA, edgeA, baseColor ? THREE.NormalBlending : undefined);
     m.material = mats.fill; m.renderOrder = 1;
     let edges = null;
-    if (ea > 0){
+    if (ea > 0){   // "ea>0?" ongeschaald: of een kind überhaupt een draadmodel heeft staat los van de schuifstand
       edges = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry, ang), mats.edge);
       edges.renderOrder = 2; m.add(edges);
       const p = edges.geometry.attributes.position, v = new THREE.Vector3();
       const step = Math.max(1, Math.floor(p.count / 300));
       for (let i = 0; i < p.count; i += step){ v.fromBufferAttribute(p, i).applyMatrix4(m.matrixWorld); samples.push(v.x, v.y, v.z); }
     }
-    const it = {m, edges, mats, kind, level, vis:1, want:1, room:null, obj:null, hi:0};
+    const it = {m, edges, mats, kind, level, vis:1, want:1, room:null, obj:null, hi:0, baseColor};
     if (kind === 'floor' && roomN){ const r = H.rooms[fpOf(roomN).id]; if (r){ r.floor = it; it.room = r; H.pick.push(m); m.userData.item = it; } }
     if (kind === 'object' && objN){
       const f = fpOf(objN);
-      const o = H.objects[f.id] || (H.objects[f.id] = {id:f.id, label:f.label, type:f.type, entity:(f.suggest && f.suggest.entity) || OBJ_FIX[f.id] || null, items:[], node:objN, room: roomN ? fpOf(roomN).id : null, level});
+      const o = H.objects[f.id] || (H.objects[f.id] = {id:f.id, label:f.label, type:f.type, entity: OBJ_FIX[f.id] || (f.suggest && f.suggest.entity) || null, items:[], node:objN, room: roomN ? fpOf(roomN).id : null, level});
       o.items.push(it); it.obj = o; H.pick.push(m); m.userData.item = it;
     }
     H.items.push(it);
@@ -4676,6 +4806,10 @@ function houseBuild(gltf){
   startBuild();
   if (pendingRoom) setTimeout(goPending, 900);
 }
+// OBJ_FIX wint nu altijd van de "suggest.entity" die het floorplan-model zelf meegeeft (10 nov) -
+// het nieuwe house.glb had voor beide airco-objecten een verkeerde/verouderde suggestie
+// (objects pointed at entities that did not exist; none of them
+// bestaat), dus zonder deze omdraaiing bleef het model naar niet-bestaande entiteiten wijzen.
 const OBJ_FIX = {};
 
 /* ---- room ↔ Home Assistant ---- */
@@ -4964,7 +5098,10 @@ function hLoop(now){
     const vis = it.vis, show = vis > 0.01;
     if (it.m.visible !== show) it.m.visible = show;
     if (!show) continue;
-    let hi = 0, col = H.color;
+    // Kleurschuif op 0% = volledig terug naar het blauwe laser-draadmodel (geen
+    // modelkleur meer); ertussenin een vloeiende overgang, erboven blijft de kleur
+    // vol verzadigd (alleen de vulling wordt dan nog feller, via uAlpha hieronder).
+    let hi = 0, col = it.baseColor ? tmpC.copy(H.color).lerp(it.baseColor, Math.min(1, colorAlphaMul)) : H.color;
     if (it.room){
       const i = it.room.info;
       if (H.sel === it.room.id && !H.selObj) hi = 0.55 + 0.25*Math.sin(t*3);
@@ -5108,7 +5245,7 @@ const EN = {
   accuIn:'sensor.lumen_e_accu_in_vandaag', accuUit:'sensor.lumen_e_accu_uit_vandaag',
   kostDag:'sensor.lumen_e_kosten_vandaag', kostMaand:'sensor.lumen_e_kosten_maand', kostVorige:'sensor.lumen_e_kosten_vorige_maand',
   bespNu:'sensor.lumen_e_besparing_nu', bespDag:'sensor.lumen_e_besparing_vandaag', bespMaand:'sensor.lumen_e_besparing_maand',
-  zonTerug:'sensor.lumen_e_zon_terugverdiend', accuTerug:'sensor.lumen_e_accu_terugverdiend', totaalTerug:'sensor.lumen_e_totaal_terugverdiend', regeling:'sensor.lumen_e_regeling'
+  zonTerug:'sensor.lumen_e_zon_terugverdiend', accuTerug:'sensor.lumen_e_accu_terugverdiend', airocTerug:'sensor.lumen_e_airco_terugverdiend', totaalTerug:'sensor.lumen_e_totaal_terugverdiend', regeling:'sensor.lumen_e_regeling'
 };
 let RULES = [], HELPER_LABEL = {};
 function rebuildRules(){
@@ -5121,9 +5258,9 @@ function rebuildRules(){
      note:S.t('regel.comfortband_note')},
     {title:S.t('regel.extremen'), ids:['input_number.lumen_extreem_koud_winter','input_number.lumen_extreem_warm_zomer','input_number.lumen_nacht_vloer','input_number.lumen_nacht_plafond','input_number.lumen_accu_nacht_marge'],
      note:S.t('regel.extremen_note')},
-    {title:S.t('regel.nachtmodus'), ids:['input_boolean.lumen_nacht_actief','input_datetime.lumen_nacht_start','input_number.lumen_nacht_wachttijd','input_boolean.lumen_nacht_lampen','input_boolean.lumen_nacht_airco','input_boolean.lumen_nacht_verwarming','input_number.lumen_nacht_wintertemp']},
+    {title:S.t('regel.nachtmodus'), ids:['input_boolean.lumen_nacht_actief','input_datetime.lumen_nacht_start','input_datetime.lumen_nacht_einde','input_number.lumen_nacht_wachttijd','input_boolean.lumen_nacht_lampen','input_boolean.lumen_nacht_airco','input_boolean.lumen_nacht_verwarming','input_number.lumen_nacht_wintertemp']},
     {title:S.t('regel.vakantie'), ids:['input_boolean.lumen_vakantie','input_datetime.lumen_vakantie_van','input_datetime.lumen_vakantie_tot','input_number.lumen_vakantie_temp','input_boolean.lumen_vakantie_aanwezigheid']},
-    {title:S.t('regel.investering'), ids:['input_number.lumen_zon_investering','input_number.lumen_accu_investering'], note:S.t('regel.investering_note')}
+    {title:S.t('regel.investering'), ids:['input_number.lumen_zon_investering','input_number.lumen_accu_investering','input_number.lumen_airco_investering','input_number.lumen_airco_vermogen_verwarmen'], note:S.t('regel.investering_note')}
   ];
   HELPER_LABEL = {
     'input_select.huis_modus':S.t('helper.stand'), 'input_boolean.lumen_slim_besparen':S.t('regel.slim_besparen'),
@@ -5133,11 +5270,15 @@ function rebuildRules(){
     'input_number.lumen_comfort_zomer_min':S.t('helper.zomer_minimaal'), 'input_number.lumen_comfort_zomer_max':S.t('helper.zomer_maximaal'),
     'input_number.lumen_extreem_koud_winter':S.t('helper.extreem_koud'), 'input_number.lumen_extreem_warm_zomer':S.t('helper.extreem_warm'),
     'input_number.lumen_nacht_vloer':S.t('helper.nacht_vloer'), 'input_number.lumen_nacht_plafond':S.t('helper.nacht_plafond'), 'input_number.lumen_accu_nacht_marge':S.t('helper.accu_marge'),
-    'input_boolean.lumen_nacht_actief':S.t('helper.nachtmodus_aan'), 'input_datetime.lumen_nacht_start':S.t('helper.begint_om'), 'input_number.lumen_nacht_wachttijd':S.t('helper.wachttijd'),
+    'input_boolean.lumen_nacht_actief':S.t('helper.nachtmodus_aan'), 'input_datetime.lumen_nacht_start':S.t('helper.begint_om'), 'input_datetime.lumen_nacht_einde':S.t('helper.eindigt_om'), 'input_number.lumen_nacht_wachttijd':S.t('helper.wachttijd'),
     'input_boolean.lumen_nacht_lampen':S.t('helper.lampen_uit'), 'input_boolean.lumen_nacht_airco':S.t('helper.aircos_uit'), 'input_boolean.lumen_nacht_verwarming':S.t('helper.verwarming_uit'), 'input_number.lumen_nacht_wintertemp':S.t('helper.wintertemperatuur'),
     'input_boolean.lumen_vakantie':S.t('helper.vakantie_aan'), 'input_datetime.lumen_vakantie_van':S.t('helper.van'), 'input_datetime.lumen_vakantie_tot':S.t('helper.tot_en_met'),
     'input_number.lumen_vakantie_temp':S.t('helper.temperatuur'), 'input_boolean.lumen_vakantie_aanwezigheid':S.t('helper.lampen_aanwezigheid'),
-    'input_number.lumen_zon_investering':S.t('energie.zonnepanelen'), 'input_number.lumen_accu_investering':S.t('energie.thuisaccu')
+    'input_number.lumen_zon_investering':S.t('energie.zonnepanelen'), 'input_number.lumen_accu_investering':S.t('energie.thuisaccu'),
+    'input_number.lumen_airco_investering':S.t('energie.airco_terugverdiend'), 'input_number.lumen_airco_vermogen_verwarmen':S.t('helper.airco_vermogen'),
+    'input_number.lumen_auto_km_stand':S.t('auto.km_stand'), 'input_datetime.lumen_auto_onderhoud_laatst':S.t('auto.onderhoud_laatst_datum'),
+    'input_number.lumen_auto_onderhoud_laatst_km':S.t('auto.onderhoud_laatst_km'), 'input_number.lumen_auto_onderhoud_interval_km':S.t('auto.onderhoud_interval_km'),
+    'input_number.lumen_auto_onderhoud_interval_maanden':S.t('auto.onderhoud_interval_maanden'), 'input_datetime.lumen_auto_apk_handmatig':S.t('auto.apk_handmatig')
   };
 }
 rebuildRules();
@@ -5153,7 +5294,7 @@ const kwh = v => v == null ? '–' : nfmt(v, v >= 100 ? 0 : 1) + ' kWh';
 
 /* ---- generic widget for a Home Assistant helper ---- */
 function helperRow(id){
-  const r = el('div', 'row'), n = el('span', 'rn', HELPER_LABEL[id] || nameOf(id)), right = el('div', 'hbtns'); r.append(n, right);
+  const r = el('div', 'row'), n = el('span', 'rn', HELPER_LABEL[id] || HELPER_LABEL[id.replace(/^number\./, 'input_number.').replace(/^date\./, 'input_datetime.')] || nameOf(id)), right = el('div', 'hbtns'); r.append(n, right);
   const d = id.split('.')[0];
   let upd = () => {};
   if (d === 'input_boolean'){
@@ -5169,25 +5310,42 @@ function helperRow(id){
         for (const o of ops){ const b = el('button', 'chip', cap1(o)); b.type = 'button'; b.dataset.o = o;
           b.addEventListener('click', () => { call('input_select', 'select_option', {entity_id:id, option:o}); optimistic(id, {state:o}); }); chips.append(b); } }
       for (const b of chips.children) b.setAttribute('aria-pressed', String(b.dataset.o === s.state)); };
-  } else if (d === 'input_number'){
+  } else if (d === 'input_number' || d === 'number'){
     const sp = el('div', 'setp mini'), mi = el('button', null, '−'), out = el('output'), pl = el('button', null, '+'); mi.type = pl.type = 'button';
-    mi.setAttribute('aria-label', S.t('algemeen.lager')); pl.setAttribute('aria-label', S.t('algemeen.hoger')); sp.append(mi, out, pl); right.append(sp);
+    mi.setAttribute('aria-label', S.t('algemeen.lager')); pl.setAttribute('aria-label', S.t('algemeen.hoger'));
+    out.tabIndex = 0; out.classList.add('editable'); out.title = S.t('algemeen.tik_om_in_te_vullen');
+    sp.append(mi, out, pl); right.append(sp);
     let want = null, t = null;
+    const commit = v => { const s = ST[id]; if (!s) return; const a = s.attributes;
+      v = Math.min(+a.max, Math.max(+a.min, v)); clearTimeout(t); want = null;
+      call(d, 'set_value', {entity_id:id, value:v}); optimistic(id, {state:String(v)}); upd(); };
     const step = dir => { const s = ST[id]; if (!s) return; const a = s.attributes, st = +a.step || 1;
       const cur = want != null ? want : parseFloat(s.state);
       want = Math.min(+a.max, Math.max(+a.min, Math.round((cur + dir*st)/st)*st)); upd(); clearTimeout(t);
-      t = setTimeout(() => { call('input_number', 'set_value', {entity_id:id, value:want}); optimistic(id, {state:String(want)}); want = null; }, 700); };
+      t = setTimeout(() => commit(want), 700); };
     mi.addEventListener('click', () => step(-1)); pl.addEventListener('click', () => step(1));
+    // Rechtstreeks een waarde kunnen intikken (10 nov) - de +/-knoppen alleen waren te traag
+    // om bv. een investeringsbedrag met honderden euro's te corrigeren.
+    const edit = () => { const s = ST[id]; if (!s) return; const inp = el('input'); inp.type = 'number'; inp.inputMode = 'decimal'; inp.className = 'hnum-edit';
+      inp.step = s.attributes.step || 1; inp.min = s.attributes.min; inp.max = s.attributes.max;
+      inp.value = want != null ? want : s.state; out.replaceWith(inp); inp.focus(); inp.select();
+      let done = false;
+      const finish = commitIt => { if (done) return; done = true; const raw = inp.value; inp.replaceWith(out);
+        if (commitIt){ const v = parseFloat(String(raw).replace(',', '.')); if (!isNaN(v)) commit(v); else upd(); } else upd(); };
+      inp.addEventListener('blur', () => finish(true));
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); else if (e.key === 'Escape') finish(false); }); };
+    out.addEventListener('click', edit); out.addEventListener('keydown', e => { if (e.key === 'Enter') edit(); });
     upd = () => { const s = ST[id]; if (!s){ out.textContent = '–'; return; } const v = want != null ? want : parseFloat(s.state), u = s.attributes.unit_of_measurement || '';
       out.textContent = (u === '€' ? eur(v) : nfmt(v, (+s.attributes.step || 1) < 1 ? 1 : 0) + (u ? ' ' + u : '')); };
-  } else if (d === 'input_datetime'){
+  } else if (d === 'input_datetime' || d === 'date'){
     const inp = el('input', 'dt'); right.append(inp);
-    inp.addEventListener('change', () => { const s = ST[id]; if (!s || !inp.value) return; const a = s.attributes;
+    inp.addEventListener('change', () => { const s = ST[id]; if (!s || !inp.value) return; const a = d === 'date' ? {has_date:true} : s.attributes;
+      if (d === 'date'){ call('date', 'set_value', {entity_id:id, date:inp.value}); return; }
       const data = {entity_id:id};
       if (a.has_date && a.has_time){ data.datetime = inp.value.replace('T', ' ') + (inp.value.length === 16 ? ':00' : ''); }
       else if (a.has_date) data.date = inp.value; else data.time = inp.value + (inp.value.length === 5 ? ':00' : '');
       call('input_datetime', 'set_datetime', data); });
-    upd = () => { const s = ST[id]; if (!s){ inp.disabled = true; return; } const a = s.attributes; inp.disabled = false;
+    upd = () => { const s = ST[id]; if (!s){ inp.disabled = true; return; } const a = d === 'date' ? {has_date:true} : s.attributes; inp.disabled = false;
       inp.type = a.has_date && a.has_time ? 'datetime-local' : a.has_date ? 'date' : 'time';
       if (document.activeElement !== inp) inp.value = a.has_date && a.has_time ? s.state.replace(' ', 'T').slice(0, 16) : a.has_date ? s.state.slice(0, 10) : s.state.slice(0, 5); };
   } else if (d === 'schedule'){
@@ -5324,10 +5482,14 @@ function flowCard(){
   return {el:k.c, upd(){ const s = ST[EN.regeling]; reg.textContent = s ? S.t('energie.slimme_regeling') + ': ' + s.state : ''; reg.hidden = !s; if (!raf) raf = requestAnimationFrame(draw); }};
 }
 /* ---- number tiles ---- */
-function tileCard(title, items){
+function tileCard(title, items, infoIds){
   const k = card(title); const g = el('div', 'tiles'); k.c.append(g);
   const cells = items.map(([lab, fn, cls]) => { const d = el('div', 'tile' + (cls ? ' ' + cls : '')); const c = el('span', 'cap', lab), b = el('b'); d.append(c, b); g.append(d); return {b, fn, d}; });
-  return {el:k.c, upd(){ for (const c of cells){ const [txt, tone] = [].concat(c.fn()); c.b.textContent = txt; c.d.dataset.tone = tone || ''; } }};
+  // "info velden": toont de methode-attributen van de opgegeven sensoren (al aanwezig op
+  // de HA-kant, hier alleen zichtbaar gemaakt) - zelf Nederlands, zelfde grens als nieuws/weer.
+  const hint = infoIds && infoIds.length ? el('p', 'lhint wpad') : null; if (hint) k.c.append(hint);
+  return {el:k.c, upd(){ for (const c of cells){ const [txt, tone] = [].concat(c.fn()); c.b.textContent = txt; c.d.dataset.tone = tone || ''; }
+    if (hint){ const texts = infoIds.map(id => ST[id] && ST[id].attributes && ST[id].attributes.methode).filter(Boolean); hint.textContent = texts.join(' · '); hint.hidden = !texts.length; } }};
 }
 function payback(id, label){
   const k = card(label); const box = el('div', 'payb'); const big = el('div', 'big'); const bar = el('div', 'bar'); const fill = el('i'); bar.append(fill);
@@ -5336,7 +5498,8 @@ function payback(id, label){
     const v = parseFloat(s.state), a = s.attributes, pct = a.percentage != null ? +a.percentage : (a.investering ? v/a.investering*100 : null);
     big.innerHTML = ''; big.append(document.createTextNode(eur(v))); if (pct != null) big.append(el('i', null, ' ' + nfmt(pct, 0) + '%'));
     fill.style.width = Math.max(0, Math.min(100, pct || 0)) + '%';
-    sub.textContent = (a.investering ? S.t('energie.van') + ' ' + eur(+a.investering) : '') + (a.verwacht_klaar ? ' · ' + S.t('energie.verwacht_terugverdiend') + ': ' + a.verwacht_klaar : ''); }};
+    sub.textContent = (a.investering ? S.t('energie.van') + ' ' + eur(+a.investering) : '') + (a.verwacht_klaar ? ' · ' + S.t('energie.verwacht_terugverdiend') + ': ' + a.verwacht_klaar : '');
+    k.c.title = a.methode || ''; }};
 }
 /* ---- charts ---- */
 let eRange = 24;
@@ -5470,15 +5633,16 @@ function renderEnergy(force){
     [S.t('energie.bespaard_vandaag'), () => [eur(num(EN.bespDag)), 'good']], [S.t('energie.bespaard_maand'), () => [eur(num(EN.bespMaand)), 'good']],
     [S.t('energie.kosten_vandaag'), () => { const v = num(EN.kostDag); return [eur(v), v != null && v < 0 ? 'good' : '']; }],
     [S.t('energie.kosten_maand'), () => { const v = num(EN.kostMaand); return [eur(v), v != null && v < 0 ? 'good' : '']; }],
-    [S.t('energie.vorige_maand'), () => eur(num(EN.kostVorige))]]);
+    [S.t('energie.vorige_maand'), () => eur(num(EN.kostVorige))]], [EN.kostDag, EN.bespDag]);
   eW.push(tm); add(tm.el, 'wide');
   const th = tileCard(S.t('energie.verwarmen_gas_of_airco'), [
     [S.t('energie.gas_ketel'), () => num(EN.verwarmGas) != null ? ['€ ' + nfmt(num(EN.verwarmGas), 3) + '/kWh', ST[EN.verwarmAdvies] && ST[EN.verwarmAdvies].state === 'Gas goedkoper' ? 'good' : ''] : '–'],
     [S.t('energie.airco_warmtepomp'), () => num(EN.verwarmAirco) != null ? ['€ ' + nfmt(num(EN.verwarmAirco), 3) + '/kWh', ST[EN.verwarmAdvies] && ST[EN.verwarmAdvies].state === 'Airco goedkoper' ? 'good' : ''] : '–'],
-    [S.t('energie.advies_nu'), () => { const s = ST[EN.verwarmAdvies]; return s ? s.state : '–'; }]]);
+    [S.t('energie.advies_nu'), () => { const s = ST[EN.verwarmAdvies]; return s ? s.state : '–'; }]], [EN.verwarmGas, EN.verwarmAirco, EN.verwarmAdvies]);
   eW.push(th); add(th.el, 'wide');
-  const p1 = payback(EN.zonTerug, S.t('energie.zon_terugverdiend')), p2 = payback(EN.accuTerug, S.t('energie.accu_terugverdiend')), p3 = payback(EN.totaalTerug, S.t('energie.zon_accu_terugverdiend'));
-  eW.push(p1, p2, p3); add(p1.el); add(p2.el); add(p3.el, 'wide');
+  const p1 = payback(EN.zonTerug, S.t('energie.zon_terugverdiend')), p2 = payback(EN.accuTerug, S.t('energie.accu_terugverdiend')),
+        p4 = payback(EN.airocTerug, S.t('energie.airco_terugverdiend')), p3 = payback(EN.totaalTerug, S.t('energie.totaal_terugverdiend'));
+  eW.push(p1, p2, p4, p3); add(p1.el); add(p2.el); add(p4.el); add(p3.el, 'wide');
   // charts with range toggle
   const hs = el('div', 'ctl-sec wide'); hs.append(el('span', null, S.t('energie.verloop')));
   const rg = el('div', 'chips'); for (const [h, t] of [[24, S.t('energie.24uur')], [168, S.t('energie.7dagen')]]){ const b = el('button', 'chip', t); b.type = 'button'; b.setAttribute('aria-pressed', String(eRange === h));
@@ -6300,6 +6464,11 @@ function drawTL(){
   if (P.i >= 0){ const x = X(curTime()); g.fillStyle = '#ffffff'; g.fillRect(x - 1, 6, 2, 34); g.shadowColor = laser; g.shadowBlur = 8; g.fillRect(x - 1, 6, 2, 34); g.shadowBlur = 0; }
 }
 const fmtT = t => new Date(t).toLocaleString('nl-NL', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', second:'2-digit'});
+// lumen_cctv_export.py verwacht LOKALE tijd (zie zijn eigen docstring: <start_iso_local>),
+// niet UTC - .toISOString() geeft altijd UTC, wat hier een structureel uur (winter) of
+// twee uur (zomer) verschil gaf tussen de geselecteerde en de geëxporteerde tijd (10 nov).
+const isoLocal = ms => { const d = new Date(ms), p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()); };
 function updAB(){ P.abL.textContent = 'Selectie: ' + (P.a != null ? fmtT(P.a) : 'A?') + ' → ' + (P.b != null ? fmtT(P.b) : 'B?'); drawTL(); updExport(); }
 function updExport(){
   if (!P || !P.usbB) return;
@@ -6314,7 +6483,7 @@ function updExport(){
 }
 function exportAB(){
   if (P.a == null || P.b == null) return;
-  call('script', 'turn_on', {entity_id:'script.lumen_cctv_export', variables:{camera:big.id, start:new Date(P.a).toISOString(), end:new Date(P.b).toISOString()}});
+  call('script', 'turn_on', {entity_id:'script.lumen_cctv_export', variables:{camera:big.id, start:isoLocal(P.a), end:isoLocal(P.b)}});
   P.xs.textContent = 'Export gestart: ' + fmtT(P.a) + ' → ' + fmtT(P.b) + '.';
 }
 /* delete: two confirmations — a question, then typing WIS */
@@ -6737,7 +6906,8 @@ function carNow(){
 function carModelUrl(){ const m = (cfg().carModel || '').trim(); return m || (carNow() ? 'car.glb' : ''); }
 function carVis(){
   const b = document.querySelector('#tabs button[data-view=auto]'); if (!b) return;
-  const on = !!carModelUrl();
+  const kent = ST[AID('kenteken')];
+  const on = !!carModelUrl() || !!(kent && kent.state && !['unknown', 'unavailable', ''].includes(kent.state));
   b.hidden = !on;
   if (!on && S.view === 'auto') show('lumen');
 }
@@ -6898,6 +7068,92 @@ function where(R){
   return ST['zone.' + s.state] ? (ST['zone.' + s.state].attributes.friendly_name || s.state) : s.state;
 }
 function kv(k, v){ const r = el('div', 'a-kv'); r.append(el('span', null, k), el('b', null, v)); return r; }
+/* ---- handmatige gegevens voor een niet-gekoppelde auto: kenteken/RDW, tankbeurten, onderhoud ----
+   Met de Lumen-integratie zijn dit text./number./date.-entiteiten en de diensten lumen.auto_*;
+   zonder (het oude package lumen_auto.yaml) input_*-helpers en script.lumen_auto_tank_toevoegen. */
+const AUTO_IDS = {kenteken:['text.lumen_auto_kenteken', 'input_text.lumen_auto_kenteken'], km:['number.lumen_auto_km_stand', 'input_number.lumen_auto_km_stand'],
+  oh_datum:['date.lumen_auto_onderhoud_laatst', 'input_datetime.lumen_auto_onderhoud_laatst'], oh_km:['number.lumen_auto_onderhoud_laatst_km', 'input_number.lumen_auto_onderhoud_laatst_km'],
+  oh_int_km:['number.lumen_auto_onderhoud_interval_km', 'input_number.lumen_auto_onderhoud_interval_km'], oh_int_mnd:['number.lumen_auto_onderhoud_interval_maanden', 'input_number.lumen_auto_onderhoud_interval_maanden'],
+  apk:['date.lumen_auto_apk_handmatig', 'input_datetime.lumen_auto_apk_handmatig']};
+const autoIntegr = () => !!ST['text.lumen_auto_kenteken'];
+function AID(k){
+  if (k === 'sensor'){ if (autoIntegr()){ const id = Object.keys(ST).find(x => /^sensor\.lumen_auto(_\d+)?$/.test(x) && ST[x].attributes.lumen_integratie); if (id) return id; } return 'sensor.lumen_auto'; }
+  const c = AUTO_IDS[k]; return c.find(id => ST[id]) || c[0];
+}
+function carManualPanel(pn){
+  pn.append(el('div', 'hp-sec', S.t('auto.mijn_gegevens')));
+
+  const kRow = el('div', 'a-kv'), kInp = el('input'); kInp.type = 'text'; kInp.maxLength = 10; kInp.autocomplete = 'off'; kInp.placeholder = S.t('auto.kenteken_placeholder');
+  kRow.append(el('span', null, S.t('auto.kenteken')), kInp); pn.append(kRow);
+  kInp.addEventListener('keydown', e => { if (e.key === 'Enter') kInp.blur(); });
+  kInp.addEventListener('blur', () => { const v = kInp.value.trim().toUpperCase(), id = AID('kenteken'); if (v) call(id.split('.')[0], 'set_value', {entity_id:id, value:v}); });
+  aW.push(() => { const s = st(AID('kenteken')); if (document.activeElement !== kInp) kInp.value = s && !['unknown', 'unavailable'].includes(s.state) ? s.state : ''; });
+
+  const merkRow = kv(S.t('auto.merk_model'), ''), apkRow = kv(S.t('auto.apk'), ''), brandstofRow = kv(S.t('auto.brandstof_type'), '');
+  pn.append(merkRow, apkRow, brandstofRow);
+  aW.push(() => {
+    const s = st(AID('sensor')), a = s ? s.attributes : {};
+    merkRow.hidden = !a.merk; merkRow.querySelector('b').textContent = [a.merk, a.model].filter(Boolean).join(' ');
+    const dagen = a.apk_dagen;
+    apkRow.hidden = !a.apk_datum;
+    const ab = apkRow.querySelector('b');
+    ab.textContent = a.apk_datum ? a.apk_datum + (dagen != null ? ' (' + (dagen < 0 ? S.t('auto.apk_verlopen') : dagen + ' ' + S.t('auto.dagen')) + ')' : '') : '';
+    ab.classList.toggle('a-warn', dagen != null && dagen <= 30 && dagen > 7);
+    ab.classList.toggle('a-alert', dagen != null && dagen <= 7);
+    brandstofRow.hidden = !a.brandstof;
+    brandstofRow.querySelector('b').textContent = [a.brandstof, a.verbruik_fabriek != null ? nfmt(a.verbruik_fabriek, 1) + ' l/100km (fabriek)' : null].filter(Boolean).join(' · ');
+  });
+
+  const wKm = helperRow(AID('km')); pn.append(wKm.el); aW.push(wKm.upd);
+
+  pn.append(el('div', 'hp-sec', S.t('auto.tanken_registreren')));
+  const dIn = el('input'), kmIn = el('input'), lIn = el('input'), pIn = el('input');
+  dIn.type = 'date'; dIn.value = new Date().toISOString().slice(0, 10);
+  kmIn.type = 'number'; kmIn.placeholder = S.t('auto.km_stand'); kmIn.min = 0; kmIn.step = 1;
+  lIn.type = 'number'; lIn.placeholder = S.t('auto.liters'); lIn.min = 0.1; lIn.step = 0.01;
+  pIn.type = 'number'; pIn.placeholder = S.t('auto.prijs_optioneel'); pIn.min = 0; pIn.step = 0.01;
+  const subBtn = el('button', 'hbtn', S.t('auto.tanken_opslaan')); subBtn.type = 'button';
+  const form = el('div', 'a-tankform'); form.append(dIn, kmIn, lIn, pIn, subBtn); pn.append(form);
+  const tankMsg = el('p', 'hhelp'); pn.append(tankMsg);
+  subBtn.addEventListener('click', () => {
+    const km = parseFloat(kmIn.value), l = parseFloat(lIn.value), p = pIn.value ? parseFloat(pIn.value) : null;
+    if (!dIn.value || isNaN(km) || isNaN(l)){ tankMsg.textContent = S.t('auto.tanken_fout_velden'); return; }
+    if (autoIntegr()) call('lumen', 'auto_tankbeurt', Object.assign({datum:dIn.value, km, liters:l}, p != null ? {prijs:p} : {}));
+    else call('script', 'turn_on', {entity_id:'script.lumen_auto_tank_toevoegen', variables:{datum:dIn.value, km, liters:l, prijs: p != null ? p : '-'}});
+    tankMsg.textContent = S.t('auto.tanken_opgeslagen'); kmIn.value = ''; lIn.value = ''; pIn.value = '';
+  });
+
+  const verbRow = kv(S.t('auto.verbruik'), ''); pn.append(verbRow);
+  const lijstEl = el('div', 'a-tanklijst'); pn.append(lijstEl);
+  aW.push(() => {
+    const s = st(AID('sensor')), a = s ? s.attributes : {};
+    const delen = [];
+    if (a.verbruik_laatste != null) delen.push(S.t('auto.laatste') + ': ' + nfmt(a.verbruik_laatste, 1) + ' l/100km');
+    if (a.verbruik_gemiddeld != null) delen.push(S.t('auto.gemiddeld') + ': ' + nfmt(a.verbruik_gemiddeld, 1) + ' l/100km');
+    verbRow.hidden = !delen.length; verbRow.querySelector('b').textContent = delen.join(' · ');
+    lijstEl.textContent = '';
+    for (const t of (a.tankbeurten || []).slice(-5).reverse()) lijstEl.append(el('div', 'a-tankrij', t.datum + ' · ' + nfmt(t.km, 0) + ' km · ' + nfmt(t.liters, 1) + ' L' + (t.prijs ? ' · € ' + nfmt(t.prijs, 2) : '')));
+  });
+
+  pn.append(el('div', 'hp-sec', S.t('auto.onderhoud')));
+  for (const id of ['oh_datum', 'oh_km', 'oh_int_km', 'oh_int_mnd'].map(AID)){
+    const w = helperRow(id); pn.append(w.el); aW.push(w.upd);
+  }
+  const ohRow = kv(S.t('auto.onderhoud_volgende'), ''); pn.append(ohRow);
+  aW.push(() => {
+    const s = st(AID('sensor')), a = s ? s.attributes : {};
+    const delen = [];
+    if (a.onderhoud_km_resterend != null) delen.push(nfmt(a.onderhoud_km_resterend, 0) + ' km');
+    if (a.onderhoud_dagen_resterend != null) delen.push(a.onderhoud_dagen_resterend + ' ' + S.t('auto.dagen'));
+    ohRow.hidden = !delen.length;
+    const ob = ohRow.querySelector('b'); ob.textContent = delen.join(' / ');
+    const due = (a.onderhoud_km_resterend != null && a.onderhoud_km_resterend <= 0) || (a.onderhoud_dagen_resterend != null && a.onderhoud_dagen_resterend <= 0);
+    const near = (a.onderhoud_km_resterend != null && a.onderhoud_km_resterend <= 500) || (a.onderhoud_dagen_resterend != null && a.onderhoud_dagen_resterend <= 30);
+    ob.classList.toggle('a-alert', due); ob.classList.toggle('a-warn', !due && near);
+  });
+
+  const wApk = helperRow(AID('apk')); pn.append(wApk.el); aW.push(wApk.upd);
+}
 function carRender(force){
   const pn = $('aPanel'), cars = $('aCars'); if (!pn) return;
   const car = carNow();
@@ -6918,6 +7174,7 @@ function carRender(force){
     const k = card((credit && credit.title) || S.t('tab.auto')); pn.append(...k.c.childNodes);
     pn.append(el('p', 'hp-empty', S.t('auto.alleen_weergave')));
     if (credit) pn.append(el('div', 'hp-sub a-credit', [credit.author && 'Model: ' + credit.author.replace(/\s*\(.*\)$/, ''), credit.license && credit.license.replace(/\s*\(.*\)$/, '')].filter(Boolean).join(' · ')));
+    carManualPanel(pn);
     carSetRing(null, false); return;
   }
   const k = card(car.name, [car.make, car.model].filter(Boolean).join(' ')); pn.append(...k.c.childNodes);

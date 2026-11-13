@@ -15,6 +15,7 @@ from .const import (
     CONF_AGENT,
     CONF_ICON,
     CONF_LANG,
+    CONF_NOTIFY,
     CONF_PLACE,
     CONF_STT,
     CONF_TITLE,
@@ -50,6 +51,7 @@ def _schema(defaults: dict[str, Any], lang: str) -> vol.Schema:
             ),
             vol.Optional(CONF_LANG, **d(CONF_LANG, lang)): str,
             vol.Optional(CONF_PLACE, **d(CONF_PLACE)): str,
+            vol.Optional(CONF_NOTIFY, **d(CONF_NOTIFY)): str,
         }
     )
 

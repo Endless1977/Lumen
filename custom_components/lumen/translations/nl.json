@@ -13,10 +13,12 @@
           "voice": "Stemvariant (optioneel, bijv. nl_NL-ronnie-medium)",
           "stt": "Spraakherkenning (leeg = die van de browser)",
           "lang": "Taal (nl, nl-BE, en …)",
-          "place": "Woonplaats (voor lokaal nieuws, optioneel)"
+          "place": "Woonplaats (voor lokaal nieuws, optioneel)",
+          "notify": "Meldingsdienst voor autoherinneringen (optioneel, bijv. notify.mobile_app_telefoon)"
         },
         "data_description": {
-          "agent": "Geldt voor elk scherm dat in Lumen zelf geen eigen gespreksagent heeft ingesteld. Hetzelfde voor stem, spraakherkenning en taal."
+          "agent": "Geldt voor elk scherm dat in Lumen zelf geen eigen gespreksagent heeft ingesteld. Hetzelfde voor stem, spraakherkenning en taal.",
+          "notify": "APK- en onderhoudsherinneringen verschijnen altijd als melding in Home Assistant en op Lumen; met een meldingsdienst gaan ze ook naar je telefoon."
         }
       }
     },
@@ -39,12 +41,46 @@
           "voice": "Stemvariant (optioneel, bijv. nl_NL-ronnie-medium)",
           "stt": "Spraakherkenning (leeg = die van de browser)",
           "lang": "Taal (nl, nl-BE, en …)",
-          "place": "Woonplaats (voor lokaal nieuws, optioneel)"
+          "place": "Woonplaats (voor lokaal nieuws, optioneel)",
+          "notify": "Meldingsdienst voor autoherinneringen (optioneel, bijv. notify.mobile_app_telefoon)"
         },
         "data_description": {
-          "agent": "Geldt voor elk scherm dat in Lumen zelf geen eigen gespreksagent heeft ingesteld. Hetzelfde voor stem, spraakherkenning en taal."
+          "agent": "Geldt voor elk scherm dat in Lumen zelf geen eigen gespreksagent heeft ingesteld. Hetzelfde voor stem, spraakherkenning en taal.",
+          "notify": "APK- en onderhoudsherinneringen verschijnen altijd als melding in Home Assistant en op Lumen; met een meldingsdienst gaan ze ook naar je telefoon."
         }
       }
+    }
+  },
+  "services": {
+    "auto_tankbeurt": {
+      "name": "Auto: tankbeurt toevoegen",
+      "description": "Voegt een tankbeurt toe voor de auto zonder eigen integratie en werkt de km-stand bij. Het verbruik volgt uit de afstand tussen tankbeurten.",
+      "fields": {
+        "datum": {
+          "name": "Datum",
+          "description": "Dag van de tankbeurt (leeg = vandaag)."
+        },
+        "km": {
+          "name": "Km-stand",
+          "description": "Km-stand bij deze tankbeurt."
+        },
+        "liters": {
+          "name": "Liters",
+          "description": "Getankte liters."
+        },
+        "prijs": {
+          "name": "Prijs",
+          "description": "Totaalprijs (optioneel)."
+        }
+      }
+    },
+    "auto_tankbeurt_verwijderen": {
+      "name": "Auto: laatste tankbeurt verwijderen",
+      "description": "Verwijdert de tankbeurt met de hoogste km-stand."
+    },
+    "auto_rdw_ophalen": {
+      "name": "Auto: opzoeken bij de RDW",
+      "description": "Zoekt het kenteken opnieuw op in de open data van de RDW (merk, model, APK-datum, brandstof)."
     }
   }
 }
